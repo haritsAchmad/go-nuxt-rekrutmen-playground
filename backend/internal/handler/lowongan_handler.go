@@ -4,34 +4,10 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
+	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/usecase"
 )
-
-type Lowongan struct {
-	ID     int    `json:"id"`
-	Judul  string `json:"judul"`
-	Unit   string `json:"unit"`
-	Status string `json:"status"`
-}
-
-type CreateLowonganRequest struct {
-	Judul string `json:"judul"`
-	Unit  string `json:"unit"`
-}
-
-var lowonganData = []Lowongan{
-	{
-		ID:     1,
-		Judul:  "Staf Administrasi",
-		Unit:   "Direktorat SDM",
-		Status: "aktif",
-	},
-	{
-		ID:     2,
-		Judul:  "Backend Developer",
-		Unit:   "Direktorat Sistem Informasi",
-		Status: "aktif",
-	},
-}
 
 func LowonganHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -53,16 +29,18 @@ func LowonganHandler(w http.ResponseWriter, r *http.Request) {
 func GetLowongan(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	data := usecase.GetLowonganList()
+
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,
-		"data":    lowonganData,
+		"data":    data,
 	})
 }
 
 func CreateLowongan(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var request CreateLowonganRequest
+	var request domain.CreateLowonganRequest
 
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
@@ -75,24 +53,16 @@ func CreateLowongan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if request.Judul == "" || request.Unit == "" {
+	newLowongan, err := usecase.CreateLowongan(request)
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 
 		json.NewEncoder(w).Encode(map[string]interface{}{
 			"success": false,
-			"message": "Judul dan unit wajib diisi",
+			"message": err.Error(),
 		})
 		return
 	}
-
-	newLowongan := Lowongan{
-		ID:     len(lowonganData) + 1,
-		Judul:  request.Judul,
-		Unit:   request.Unit,
-		Status: "aktif",
-	}
-
-	lowonganData = append(lowonganData, newLowongan)
 
 	w.WriteHeader(http.StatusCreated)
 
