@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+
+	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/handler"
 )
 
 func main() {
@@ -15,6 +17,8 @@ func main() {
 			"message": "Go backend is running",
 		})
 	})
+
+	http.HandleFunc("/api/lowongan", handler.GetLowongan)
 
 	log.Println("Server running on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
