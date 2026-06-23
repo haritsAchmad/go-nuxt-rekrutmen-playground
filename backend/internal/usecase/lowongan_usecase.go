@@ -4,25 +4,11 @@ import (
 	"errors"
 
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
+	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/repository"
 )
 
-var lowonganData = []domain.Lowongan{
-	{
-		ID:     1,
-		Judul:  "Staf Administrasi",
-		Unit:   "Direktorat SDM",
-		Status: "aktif",
-	},
-	{
-		ID:     2,
-		Judul:  "Backend Developer",
-		Unit:   "Direktorat Sistem Informasi",
-		Status: "aktif",
-	},
-}
-
 func GetLowonganList() []domain.Lowongan {
-	return lowonganData
+	return repository.GetAllLowongan()
 }
 
 func CreateLowongan(request domain.CreateLowonganRequest) (domain.Lowongan, error) {
@@ -30,14 +16,13 @@ func CreateLowongan(request domain.CreateLowonganRequest) (domain.Lowongan, erro
 		return domain.Lowongan{}, errors.New("judul dan unit wajib diisi")
 	}
 
-	newLowongan := domain.Lowongan{
-		ID:     len(lowonganData) + 1,
+	lowongan := domain.Lowongan{
 		Judul:  request.Judul,
 		Unit:   request.Unit,
 		Status: "aktif",
 	}
 
-	lowonganData = append(lowonganData, newLowongan)
+	newLowongan := repository.CreateLowongan(lowongan)
 
 	return newLowongan, nil
 }
