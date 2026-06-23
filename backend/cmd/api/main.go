@@ -18,7 +18,7 @@ func main() {
 		})
 	})
 
-	http.HandleFunc("/api/lowongan", handler.GetLowongan)
+	http.HandleFunc("/api/lowongan", handler.LowonganHandler)
 
 	log.Println("Server running on http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
