@@ -18,6 +18,12 @@ async function resetFilter() {
 }
 
 const editId = ref(null)
+const selectedIds = ref([])
+
+const isAllSelected = computed(() => {
+  return lowonganList.value.length > 0 &&
+    selectedIds.value.length === lowonganList.value.length
+})
 
 const apiUrl = computed(() => {
   const params = new URLSearchParams()
@@ -94,6 +100,47 @@ async function toggleStatus(lowongan) {
   await refresh()
 }
 
+async function bulkUpdateStatus(status) {
+  if (selectedIds.value.length === 0) {
+    alert('Pilih minimal satu lowongan')
+    return
+  }
+
+  await $fetch('http://localhost:8080/api/lowongan/bulk-status', {
+    method: 'PUT',
+    body: {
+      ids: selectedIds.value,
+      status: status
+    }
+  })
+
+  selectedIds.value = []
+  await refresh()
+}
+
+async function bulkDelete() {
+  if (selectedIds.value.length === 0) {
+    alert('Pilih minimal satu lowongan')
+    return
+  }
+
+  const yakin = confirm('Yakin mau hapus lowongan yang dipilih?')
+
+  if (!yakin) {
+    return
+  }
+
+  await $fetch('http://localhost:8080/api/lowongan/bulk-delete', {
+    method: 'DELETE',
+    body: {
+      ids: selectedIds.value
+    }
+  })
+
+  selectedIds.value = []
+  await refresh()
+}
+
 function editLowongan(lowongan) {
   editId.value = lowongan.id
   form.judul = lowongan.judul
@@ -106,6 +153,15 @@ function resetForm() {
   form.judul = ''
   form.unit = ''
   form.status = 'aktif'
+}
+
+function toggleSelectAll() {
+  if (isAllSelected.value) {
+    selectedIds.value = []
+    return
+  }
+
+  selectedIds.value = lowonganList.value.map((lowongan) => lowongan.id)
 }
 </script>
 
@@ -157,22 +213,54 @@ function resetForm() {
   </button>
 </div>
 
+<div style="margin-bottom: 16px;">
+  <h3>Bulk Action</h3>
+
+  <p>Terpilih: {{ selectedIds.length }} lowongan</p>
+
+  <button type="button" @click="bulkUpdateStatus('aktif')">
+    Aktifkan Terpilih
+  </button>
+
+  <button type="button" @click="bulkUpdateStatus('nonaktif')">
+    Nonaktifkan Terpilih
+  </button>
+
+  <button type="button" @click="bulkDelete">
+    Hapus Terpilih
+  </button>
+</div>
+
 <p v-if="pending">Loading...</p>
 <p v-else-if="error">Gagal ambil data lowongan</p>
 
 <table v-if="!pending && !error" border="1" cellpadding="8" cellspacing="0">
   <thead>
     <tr>
-      <th>ID</th>
-      <th>Judul</th>
-      <th>Unit</th>
-      <th>Status</th>
-      <th>Aksi</th>
-    </tr>
+  <th>
+    <input
+      type="checkbox"
+      :checked="isAllSelected"
+      @change="toggleSelectAll"
+    >
+  </th>
+  <th>ID</th>
+  <th>Judul</th>
+  <th>Unit</th>
+  <th>Status</th>
+  <th>Aksi</th>
+</tr>
   </thead>
 
   <tbody>
     <tr v-for="lowongan in lowonganList" :key="lowongan.id">
+<td>
+  <input
+    v-model="selectedIds"
+    type="checkbox"
+    :value="lowongan.id"
+  >
+</td>
       <td>{{ lowongan.id }}</td>
       <td>{{ lowongan.judul }}</td>
       <td>{{ lowongan.unit }}</td>
