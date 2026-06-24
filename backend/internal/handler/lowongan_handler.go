@@ -4,9 +4,9 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
 
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
+	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/request"
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/response"
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/usecase"
 )
@@ -60,10 +60,8 @@ func CreateLowongan(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteLowongan(w http.ResponseWriter, r *http.Request) {
-	idText := r.URL.Query().Get("id")
-	id, err := strconv.Atoi(idText)
-
-	if err != nil || id <= 0 {
+	id, err := request.GetIDFromQuery(r)
+	if err != nil {
 		response.Error(w, http.StatusBadRequest, "ID lowongan tidak valid")
 		return
 	}
@@ -78,10 +76,8 @@ func DeleteLowongan(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateLowonganStatus(w http.ResponseWriter, r *http.Request) {
-	idText := r.URL.Query().Get("id")
-	id, err := strconv.Atoi(idText)
-
-	if err != nil || id <= 0 {
+	id, err := request.GetIDFromQuery(r)
+	if err != nil {
 		response.Error(w, http.StatusBadRequest, "ID lowongan tidak valid")
 		return
 	}
@@ -104,10 +100,8 @@ func UpdateLowonganStatus(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateLowongan(w http.ResponseWriter, r *http.Request) {
-	idText := r.URL.Query().Get("id")
-	id, err := strconv.Atoi(idText)
-
-	if err != nil || id <= 0 {
+	id, err := request.GetIDFromQuery(r)
+	if err != nil {
 		response.Error(w, http.StatusBadRequest, "ID lowongan tidak valid")
 		return
 	}
