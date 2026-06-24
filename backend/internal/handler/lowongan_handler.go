@@ -4,6 +4,7 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/usecase"
@@ -15,6 +16,8 @@ func LowonganHandler(w http.ResponseWriter, r *http.Request) {
 		GetLowongan(w, r)
 	case http.MethodPost:
 		CreateLowongan(w, r)
+	case http.MethodDelete:
+		DeleteLowongan(w, r)
 	default:
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -70,5 +73,38 @@ func CreateLowongan(w http.ResponseWriter, r *http.Request) {
 		"success": true,
 		"message": "Lowongan berhasil ditambahkan",
 		"data":    newLowongan,
+	})
+}
+
+func DeleteLowongan(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	idText := r.URL.Query().Get("id")
+	id, err := strconv.Atoi(idText)
+
+	if err != nil || id <= 0 {
+		w.WriteHeader(http.StatusBadRequest)
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "ID lowongan tidak valid",
+		})
+		return
+	}
+
+	err = usecase.DeleteLowongan(id)
+	if err != nil {
+		w.WriteHeader(http.StatusNotFound)
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
+
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Lowongan berhasil dihapus",
 	})
 }

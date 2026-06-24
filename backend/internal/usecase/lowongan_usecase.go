@@ -26,3 +26,12 @@ func CreateLowongan(request domain.CreateLowonganRequest) (domain.Lowongan, erro
 
 	return newLowongan, nil
 }
+
+func DeleteLowongan(id int) error {
+	err := repository.DeleteLowongan(id)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

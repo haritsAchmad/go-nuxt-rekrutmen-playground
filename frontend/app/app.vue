@@ -24,6 +24,20 @@ async function submitLowongan() {
 
   await refresh()
 }
+
+async function deleteLowongan(id) {
+  const yakin = confirm('Yakin mau hapus lowongan ini?')
+
+  if (!yakin) {
+    return
+  }
+
+  await $fetch(`http://localhost:8080/api/lowongan?id=${id}`, {
+    method: 'DELETE'
+  })
+
+  await refresh()
+}
 </script>
 
 <template>
@@ -48,23 +62,29 @@ async function submitLowongan() {
     <p v-else-if="error">Gagal ambil data lowongan</p>
 
     <table v-else border="1" cellpadding="8" cellspacing="0">
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Judul</th>
-          <th>Unit</th>
-          <th>Status</th>
-        </tr>
-      </thead>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Judul</th>
+      <th>Unit</th>
+      <th>Status</th>
+      <th>Aksi</th>
+    </tr>
+  </thead>
 
-      <tbody>
-        <tr v-for="lowongan in lowonganList" :key="lowongan.id">
-          <td>{{ lowongan.id }}</td>
-          <td>{{ lowongan.judul }}</td>
-          <td>{{ lowongan.unit }}</td>
-          <td>{{ lowongan.status }}</td>
-        </tr>
-      </tbody>
-    </table>
+  <tbody>
+    <tr v-for="lowongan in lowonganList" :key="lowongan.id">
+      <td>{{ lowongan.id }}</td>
+      <td>{{ lowongan.judul }}</td>
+      <td>{{ lowongan.unit }}</td>
+      <td>{{ lowongan.status }}</td>
+      <td>
+        <button type="button" @click="deleteLowongan(lowongan.id)">
+          Hapus
+        </button>
+      </td>
+    </tr>
+  </tbody>
+</table>
   </main>
 </template>
