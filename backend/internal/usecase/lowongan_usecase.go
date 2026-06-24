@@ -77,3 +77,23 @@ func UpdateLowongan(id int, request domain.UpdateLowonganRequest) (domain.Lowong
 
 	return updatedLowongan, nil
 }
+
+func BulkUpdateLowonganStatus(request domain.BulkUpdateStatusRequest) error {
+	if len(request.IDs) == 0 {
+		return errors.New("minimal pilih satu lowongan")
+	}
+
+	if request.Status != "aktif" && request.Status != "nonaktif" {
+		return errors.New("status harus aktif atau nonaktif")
+	}
+
+	return repository.BulkUpdateLowonganStatus(request.IDs, request.Status)
+}
+
+func BulkDeleteLowongan(request domain.BulkDeleteRequest) error {
+	if len(request.IDs) == 0 {
+		return errors.New("minimal pilih satu lowongan")
+	}
+
+	return repository.BulkDeleteLowongan(request.IDs)
+}

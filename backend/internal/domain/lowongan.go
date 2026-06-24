@@ -26,3 +26,12 @@ type LowonganFilterRequest struct {
 	Keyword string
 	Status  string
 }
+
+type BulkUpdateStatusRequest struct {
+	IDs    []int  `json:"ids"`
+	Status string `json:"status"`
+}
+
+type BulkDeleteRequest struct {
+	IDs []int `json:"ids"`
+}

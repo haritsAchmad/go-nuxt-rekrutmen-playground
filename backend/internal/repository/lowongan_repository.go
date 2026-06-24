@@ -100,3 +100,52 @@ func UpdateLowongan(id int, updatedLowongan domain.Lowongan) (domain.Lowongan, e
 
 	return domain.Lowongan{}, errors.New("lowongan tidak ditemukan")
 }
+
+func containsID(ids []int, id int) bool {
+	for _, selectedID := range ids {
+		if selectedID == id {
+			return true
+		}
+	}
+
+	return false
+}
+
+func BulkUpdateLowonganStatus(ids []int, status string) error {
+	found := false
+
+	for index, lowongan := range lowonganData {
+		if containsID(ids, lowongan.ID) {
+			lowonganData[index].Status = status
+			found = true
+		}
+	}
+
+	if !found {
+		return errors.New("lowongan tidak ditemukan")
+	}
+
+	return nil
+}
+
+func BulkDeleteLowongan(ids []int) error {
+	found := false
+	newData := []domain.Lowongan{}
+
+	for _, lowongan := range lowonganData {
+		if containsID(ids, lowongan.ID) {
+			found = true
+			continue
+		}
+
+		newData = append(newData, lowongan)
+	}
+
+	if !found {
+		return errors.New("lowongan tidak ditemukan")
+	}
+
+	lowonganData = newData
+
+	return nil
+}

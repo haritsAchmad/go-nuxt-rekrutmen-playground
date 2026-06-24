@@ -131,3 +131,57 @@ func LowonganStatusHandler(w http.ResponseWriter, r *http.Request) {
 		response.Error(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
 	}
 }
+
+func BulkUpdateLowonganStatus(w http.ResponseWriter, r *http.Request) {
+	var request domain.BulkUpdateStatusRequest
+
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "Format JSON tidak valid")
+		return
+	}
+
+	err = usecase.BulkUpdateLowonganStatus(request)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.Success(w, "Status lowongan terpilih berhasil diubah", nil)
+}
+
+func BulkDeleteLowongan(w http.ResponseWriter, r *http.Request) {
+	var request domain.BulkDeleteRequest
+
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "Format JSON tidak valid")
+		return
+	}
+
+	err = usecase.BulkDeleteLowongan(request)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	response.Success(w, "Lowongan terpilih berhasil dihapus", nil)
+}
+
+func LowonganBulkStatusHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPut:
+		BulkUpdateLowonganStatus(w, r)
+	default:
+		response.Error(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
+	}
+}
+
+func LowonganBulkDeleteHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodDelete:
+		BulkDeleteLowongan(w, r)
+	default:
+		response.Error(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
+	}
+}

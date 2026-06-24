@@ -11,6 +11,8 @@ func RegisterRoutes() {
 	http.HandleFunc("/health", withCors(healthHandler))
 	http.HandleFunc("/api/lowongan", withCors(handler.LowonganHandler))
 	http.HandleFunc("/api/lowongan/status", withCors(handler.LowonganStatusHandler))
+	http.HandleFunc("/api/lowongan/bulk-status", withCors(handler.LowonganBulkStatusHandler))
+	http.HandleFunc("/api/lowongan/bulk-delete", withCors(handler.LowonganBulkDeleteHandler))
 }
 
 func withCors(next http.HandlerFunc) http.HandlerFunc {
