@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
+	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/response"
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/usecase"
 )
 
@@ -21,19 +22,11 @@ func LowonganHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		DeleteLowongan(w, r)
 	default:
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"message": "Method tidak diizinkan",
-		})
+		response.Error(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
 	}
 }
 
 func GetLowongan(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	filter := domain.LowonganFilterRequest{
 		Keyword: r.URL.Query().Get("keyword"),
 		Status:  r.URL.Query().Get("status"),
@@ -41,103 +34,55 @@ func GetLowongan(w http.ResponseWriter, r *http.Request) {
 
 	data, err := usecase.GetLowonganList(filter)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"message": err.Error(),
-		})
+		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"success": true,
-		"data":    data,
-	})
+	response.Success(w, "Berhasil mengambil data lowongan", data)
 }
 
 func CreateLowongan(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	var request domain.CreateLowonganRequest
 
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"message": "Format JSON tidak valid",
-		})
+		response.Error(w, http.StatusBadRequest, "Format JSON tidak valid")
 		return
 	}
 
 	newLowongan, err := usecase.CreateLowongan(request)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"message": err.Error(),
-		})
+		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"success": true,
-		"message": "Lowongan berhasil ditambahkan",
-		"data":    newLowongan,
-	})
+	response.Created(w, "Lowongan berhasil ditambahkan", newLowongan)
 }
 
 func DeleteLowongan(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	idText := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(idText)
 
 	if err != nil || id <= 0 {
-		w.WriteHeader(http.StatusBadRequest)
-
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"message": "ID lowongan tidak valid",
-		})
+		response.Error(w, http.StatusBadRequest, "ID lowongan tidak valid")
 		return
 	}
 
 	err = usecase.DeleteLowongan(id)
 	if err != nil {
-		w.WriteHeader(http.StatusNotFound)
-
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"message": err.Error(),
-		})
+		response.Error(w, http.StatusNotFound, err.Error())
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"success": true,
-		"message": "Lowongan berhasil dihapus",
-	})
+	response.Success(w, "Lowongan berhasil dihapus", nil)
 }
 
 func UpdateLowonganStatus(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	idText := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(idText)
 
 	if err != nil || id <= 0 {
-		w.WriteHeader(http.StatusBadRequest)
-
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"message": "ID lowongan tidak valid",
-		})
+		response.Error(w, http.StatusBadRequest, "ID lowongan tidak valid")
 		return
 	}
 
@@ -145,46 +90,25 @@ func UpdateLowonganStatus(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"message": "Format JSON tidak valid",
-		})
+		response.Error(w, http.StatusBadRequest, "Format JSON tidak valid")
 		return
 	}
 
 	updatedLowongan, err := usecase.UpdateLowonganStatus(id, request)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"message": err.Error(),
-		})
+		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"success": true,
-		"message": "Status lowongan berhasil diubah",
-		"data":    updatedLowongan,
-	})
+	response.Success(w, "Status lowongan berhasil diubah", updatedLowongan)
 }
 
 func UpdateLowongan(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
 	idText := r.URL.Query().Get("id")
 	id, err := strconv.Atoi(idText)
 
 	if err != nil || id <= 0 {
-		w.WriteHeader(http.StatusBadRequest)
-
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"message": "ID lowongan tidak valid",
-		})
+		response.Error(w, http.StatusBadRequest, "ID lowongan tidak valid")
 		return
 	}
 
@@ -192,31 +116,17 @@ func UpdateLowongan(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"message": "Format JSON tidak valid",
-		})
+		response.Error(w, http.StatusBadRequest, "Format JSON tidak valid")
 		return
 	}
 
 	updatedLowongan, err := usecase.UpdateLowongan(id, request)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"message": err.Error(),
-		})
+		response.Error(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"success": true,
-		"message": "Lowongan berhasil diubah",
-		"data":    updatedLowongan,
-	})
+	response.Success(w, "Lowongan berhasil diubah", updatedLowongan)
 }
 
 func LowonganStatusHandler(w http.ResponseWriter, r *http.Request) {
@@ -224,12 +134,6 @@ func LowonganStatusHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPut:
 		UpdateLowonganStatus(w, r)
 	default:
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusMethodNotAllowed)
-
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"success": false,
-			"message": "Method tidak diizinkan",
-		})
+		response.Error(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
 	}
 }
