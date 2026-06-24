@@ -5,9 +5,39 @@ const form = reactive({
   status: 'aktif'
 })
 
+const filter = reactive({
+  keyword: '',
+  status: ''
+})
+
+async function resetFilter() {
+  filter.keyword = ''
+  filter.status = ''
+
+  await refresh()
+}
+
 const editId = ref(null)
 
-const { data, pending, error, refresh } = await useFetch('http://localhost:8080/api/lowongan')
+const apiUrl = computed(() => {
+  const params = new URLSearchParams()
+
+  if (filter.keyword) {
+    params.append('keyword', filter.keyword)
+  }
+
+  if (filter.status) {
+    params.append('status', filter.status)
+  }
+
+  const query = params.toString()
+
+  return query
+    ? `http://localhost:8080/api/lowongan?${query}`
+    : 'http://localhost:8080/api/lowongan'
+})
+
+const { data, pending, error, refresh } = await useFetch(apiUrl)
 
 const lowonganList = computed(() => {
   return data.value?.data || []
@@ -103,10 +133,34 @@ function resetForm() {
 	</button>
     </form>
 
-    <p v-if="pending">Loading...</p>
-    <p v-else-if="error">Gagal ambil data lowongan</p>
+    <div style="margin-bottom: 16px;">
+  <h3>Filter Lowongan</h3>
 
-    <table v-else border="1" cellpadding="8" cellspacing="0">
+  <input
+    v-model="filter.keyword"
+    type="text"
+    placeholder="Cari judul/unit"
+  >
+
+  <select v-model="filter.status">
+    <option value="">Semua Status</option>
+    <option value="aktif">Aktif</option>
+    <option value="nonaktif">Nonaktif</option>
+  </select>
+
+  <button type="button" @click="refresh">
+    Cari
+  </button>
+
+  <button type="button" @click="resetFilter">
+    Reset
+  </button>
+</div>
+
+<p v-if="pending">Loading...</p>
+<p v-else-if="error">Gagal ambil data lowongan</p>
+
+<table v-if="!pending && !error" border="1" cellpadding="8" cellspacing="0">
   <thead>
     <tr>
       <th>ID</th>
@@ -124,18 +178,18 @@ function resetForm() {
       <td>{{ lowongan.unit }}</td>
       <td>{{ lowongan.status }}</td>
       <td>
-  	<button type="button" @click="editLowongan(lowongan)">
-    	  Edit
-  	</button>
+        <button type="button" @click="editLowongan(lowongan)">
+          Edit
+        </button>
 
-  	<button type="button" @click="toggleStatus(lowongan)">
-    	  {{ lowongan.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan' }}
-  	</button>
+        <button type="button" @click="toggleStatus(lowongan)">
+          {{ lowongan.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan' }}
+        </button>
 
-  	<button type="button" @click="deleteLowongan(lowongan.id)">
-   	  Hapus
-  	</button>
-	</td>
+        <button type="button" @click="deleteLowongan(lowongan.id)">
+          Hapus
+        </button>
+      </td>
     </tr>
   </tbody>
 </table>

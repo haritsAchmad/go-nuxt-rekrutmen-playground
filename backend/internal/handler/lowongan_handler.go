@@ -34,7 +34,21 @@ func LowonganHandler(w http.ResponseWriter, r *http.Request) {
 func GetLowongan(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	data := usecase.GetLowonganList()
+	filter := domain.LowonganFilterRequest{
+		Keyword: r.URL.Query().Get("keyword"),
+		Status:  r.URL.Query().Get("status"),
+	}
+
+	data, err := usecase.GetLowonganList(filter)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
+	}
 
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"success": true,

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
 )
@@ -21,8 +22,32 @@ var lowonganData = []domain.Lowongan{
 	},
 }
 
-func GetAllLowongan() []domain.Lowongan {
-	return lowonganData
+func GetAllLowongan(filter domain.LowonganFilterRequest) []domain.Lowongan {
+	result := []domain.Lowongan{}
+
+	keyword := strings.ToLower(filter.Keyword)
+
+	for _, lowongan := range lowonganData {
+		matchKeyword := true
+		matchStatus := true
+
+		if keyword != "" {
+			judul := strings.ToLower(lowongan.Judul)
+			unit := strings.ToLower(lowongan.Unit)
+
+			matchKeyword = strings.Contains(judul, keyword) || strings.Contains(unit, keyword)
+		}
+
+		if filter.Status != "" {
+			matchStatus = lowongan.Status == filter.Status
+		}
+
+		if matchKeyword && matchStatus {
+			result = append(result, lowongan)
+		}
+	}
+
+	return result
 }
 
 func CreateLowongan(lowongan domain.Lowongan) domain.Lowongan {

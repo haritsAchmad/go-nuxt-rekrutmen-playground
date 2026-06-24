@@ -21,3 +21,8 @@ type UpdateLowonganRequest struct {
 	Unit   string `json:"unit"`
 	Status string `json:"status"`
 }
+
+type LowonganFilterRequest struct {
+	Keyword string
+	Status  string
+}
