@@ -19,6 +19,7 @@ func LowonganHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		DeleteLowongan(w, r)
 	case http.MethodPut:
+		UpdateLowonganStatus(w, r)
 		UpdateLowongan(w, r)
 	default:
 		w.Header().Set("Content-Type", "application/json")

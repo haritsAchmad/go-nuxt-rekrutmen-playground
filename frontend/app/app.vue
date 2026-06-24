@@ -1,8 +1,11 @@
 <script setup>
 const form = reactive({
   judul: '',
-  unit: ''
+  unit: '',
+  status: 'aktif'
 })
+
+const editId = ref(null)
 
 const { data, pending, error, refresh } = await useFetch('http://localhost:8080/api/lowongan')
 
@@ -11,17 +14,26 @@ const lowonganList = computed(() => {
 })
 
 async function submitLowongan() {
-  await $fetch('http://localhost:8080/api/lowongan', {
-    method: 'POST',
-    body: {
-      judul: form.judul,
-      unit: form.unit
-    }
-  })
+  if (editId.value) {
+    await $fetch(`http://localhost:8080/api/lowongan?id=${editId.value}`, {
+      method: 'PUT',
+      body: {
+        judul: form.judul,
+        unit: form.unit,
+        status: form.status || 'aktif'
+      }
+    })
+  } else {
+    await $fetch('http://localhost:8080/api/lowongan', {
+      method: 'POST',
+      body: {
+        judul: form.judul,
+        unit: form.unit
+      }
+    })
+  }
 
-  form.judul = ''
-  form.unit = ''
-
+  resetForm()
   await refresh()
 }
 
@@ -51,6 +63,20 @@ async function toggleStatus(lowongan) {
 
   await refresh()
 }
+
+function editLowongan(lowongan) {
+  editId.value = lowongan.id
+  form.judul = lowongan.judul
+  form.unit = lowongan.unit
+  form.status = lowongan.status
+}
+
+function resetForm() {
+  editId.value = null
+  form.judul = ''
+  form.unit = ''
+  form.status = 'aktif'
+}
 </script>
 
 <template>
@@ -68,7 +94,13 @@ async function toggleStatus(lowongan) {
         <input v-model="form.unit" type="text" placeholder="Contoh: Direktorat SDM">
       </div>
 
-      <button type="submit">Tambah Lowongan</button>
+      	<button type="submit">
+  	{{ editId ? 'Simpan Perubahan' : 'Tambah Lowongan' }}
+	</button>
+
+	<button v-if="editId" type="button" @click="resetForm">
+  	Batal Edit
+	</button>
     </form>
 
     <p v-if="pending">Loading...</p>
@@ -92,6 +124,9 @@ async function toggleStatus(lowongan) {
       <td>{{ lowongan.unit }}</td>
       <td>{{ lowongan.status }}</td>
       <td>
+	<button type="button" @click="editLowongan(lowongan)">
+    	  Edit
+  	</button>
 	<button type="button" @click="toggleStatus(lowongan)">
    	 {{ lowongan.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan' }}
   	</button>
