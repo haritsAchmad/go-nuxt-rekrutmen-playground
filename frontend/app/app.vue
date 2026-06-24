@@ -124,16 +124,18 @@ function resetForm() {
       <td>{{ lowongan.unit }}</td>
       <td>{{ lowongan.status }}</td>
       <td>
-	<button type="button" @click="editLowongan(lowongan)">
+  	<button type="button" @click="editLowongan(lowongan)">
     	  Edit
-  	to</button>
-	<button type="button" @click="toggleStatus(lowongan)">
-   	 {{ lowongan.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan' }}
   	</button>
-        <button type="button" @click="deleteLowongan(lowongan.id)">
-          Hapus
-        </button>
-      </td>
+
+  	<button type="button" @click="toggleStatus(lowongan)">
+    	  {{ lowongan.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan' }}
+  	</button>
+
+  	<button type="button" @click="deleteLowongan(lowongan.id)">
+   	  Hapus
+  	</button>
+	</td>
     </tr>
   </tbody>
 </table>
