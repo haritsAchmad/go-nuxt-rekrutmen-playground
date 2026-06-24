@@ -61,3 +61,17 @@ func UpdateLowonganStatus(id int, status string) (domain.Lowongan, error) {
 
 	return domain.Lowongan{}, errors.New("lowongan tidak ditemukan")
 }
+
+func UpdateLowongan(id int, updatedLowongan domain.Lowongan) (domain.Lowongan, error) {
+	for index, lowongan := range lowonganData {
+		if lowongan.ID == id {
+			lowonganData[index].Judul = updatedLowongan.Judul
+			lowonganData[index].Unit = updatedLowongan.Unit
+			lowonganData[index].Status = updatedLowongan.Status
+
+			return lowonganData[index], nil
+		}
+	}
+
+	return domain.Lowongan{}, errors.New("lowongan tidak ditemukan")
+}

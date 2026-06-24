@@ -48,3 +48,26 @@ func UpdateLowonganStatus(id int, request domain.UpdateLowonganStatusRequest) (d
 
 	return updatedLowongan, nil
 }
+
+func UpdateLowongan(id int, request domain.UpdateLowonganRequest) (domain.Lowongan, error) {
+	if request.Judul == "" || request.Unit == "" {
+		return domain.Lowongan{}, errors.New("judul dan unit wajib diisi")
+	}
+
+	if request.Status != "aktif" && request.Status != "nonaktif" {
+		return domain.Lowongan{}, errors.New("status harus aktif atau nonaktif")
+	}
+
+	lowongan := domain.Lowongan{
+		Judul:  request.Judul,
+		Unit:   request.Unit,
+		Status: request.Status,
+	}
+
+	updatedLowongan, err := repository.UpdateLowongan(id, lowongan)
+	if err != nil {
+		return domain.Lowongan{}, err
+	}
+
+	return updatedLowongan, nil
+}
