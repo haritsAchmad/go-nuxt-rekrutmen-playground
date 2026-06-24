@@ -10,6 +10,7 @@ import (
 func RegisterRoutes() {
 	http.HandleFunc("/health", withCors(healthHandler))
 	http.HandleFunc("/api/lowongan", withCors(handler.LowonganHandler))
+	http.HandleFunc("/api/lowongan/status", withCors(handler.LowonganStatusHandler))
 }
 
 func withCors(next http.HandlerFunc) http.HandlerFunc {

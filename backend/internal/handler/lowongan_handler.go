@@ -16,11 +16,10 @@ func LowonganHandler(w http.ResponseWriter, r *http.Request) {
 		GetLowongan(w, r)
 	case http.MethodPost:
 		CreateLowongan(w, r)
+	case http.MethodPut:
+		UpdateLowongan(w, r)
 	case http.MethodDelete:
 		DeleteLowongan(w, r)
-	case http.MethodPut:
-		UpdateLowonganStatus(w, r)
-		UpdateLowongan(w, r)
 	default:
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusMethodNotAllowed)
@@ -204,4 +203,19 @@ func UpdateLowongan(w http.ResponseWriter, r *http.Request) {
 		"message": "Lowongan berhasil diubah",
 		"data":    updatedLowongan,
 	})
+}
+
+func LowonganStatusHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodPut:
+		UpdateLowonganStatus(w, r)
+	default:
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusMethodNotAllowed)
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"success": false,
+			"message": "Method tidak diizinkan",
+		})
+	}
 }
