@@ -10,19 +10,6 @@ const filter = reactive({
   status: ''
 })
 
-async function resetFilter() {
-  filter.keyword = ''
-  filter.status = ''
-  selectedIds.value = []
-
-  await refresh()
-}
-
-async function applyFilter() {
-  selectedIds.value = []
-  await refresh()
-}
-
 const editId = ref(null)
 const selectedIds = ref([])
 
@@ -50,6 +37,19 @@ const apiUrl = computed(() => {
 })
 
 const { data, pending, error, refresh } = await useFetch(apiUrl)
+
+async function resetFilter() {
+  filter.keyword = ''
+  filter.status = ''
+  selectedIds.value = []
+
+  await refresh()
+}
+
+async function applyFilter() {
+  selectedIds.value = []
+  await refresh()
+}
 
 const lowonganList = computed(() => {
   return data.value?.data || []
