@@ -50,3 +50,14 @@ func DeleteLowongan(id int) error {
 
 	return errors.New("lowongan tidak ditemukan")
 }
+
+func UpdateLowonganStatus(id int, status string) (domain.Lowongan, error) {
+	for index, lowongan := range lowonganData {
+		if lowongan.ID == id {
+			lowonganData[index].Status = status
+			return lowonganData[index], nil
+		}
+	}
+
+	return domain.Lowongan{}, errors.New("lowongan tidak ditemukan")
+}

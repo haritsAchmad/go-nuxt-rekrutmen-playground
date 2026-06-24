@@ -11,3 +11,7 @@ type CreateLowonganRequest struct {
 	Judul string `json:"judul"`
 	Unit  string `json:"unit"`
 }
+
+type UpdateLowonganStatusRequest struct {
+	Status string `json:"status"`
+}

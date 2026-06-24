@@ -38,6 +38,19 @@ async function deleteLowongan(id) {
 
   await refresh()
 }
+
+async function toggleStatus(lowongan) {
+  const nextStatus = lowongan.status === 'aktif' ? 'nonaktif' : 'aktif'
+
+  await $fetch(`http://localhost:8080/api/lowongan?id=${lowongan.id}`, {
+    method: 'PUT',
+    body: {
+      status: nextStatus
+    }
+  })
+
+  await refresh()
+}
 </script>
 
 <template>
@@ -79,6 +92,9 @@ async function deleteLowongan(id) {
       <td>{{ lowongan.unit }}</td>
       <td>{{ lowongan.status }}</td>
       <td>
+	<button type="button" @click="toggleStatus(lowongan)">
+   	 {{ lowongan.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan' }}
+  	</button>
         <button type="button" @click="deleteLowongan(lowongan.id)">
           Hapus
         </button>

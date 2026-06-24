@@ -35,3 +35,16 @@ func DeleteLowongan(id int) error {
 
 	return nil
 }
+
+func UpdateLowonganStatus(id int, request domain.UpdateLowonganStatusRequest) (domain.Lowongan, error) {
+	if request.Status != "aktif" && request.Status != "nonaktif" {
+		return domain.Lowongan{}, errors.New("status harus aktif atau nonaktif")
+	}
+
+	updatedLowongan, err := repository.UpdateLowonganStatus(id, request.Status)
+	if err != nil {
+		return domain.Lowongan{}, err
+	}
+
+	return updatedLowongan, nil
+}
