@@ -13,7 +13,13 @@ const filter = reactive({
 async function resetFilter() {
   filter.keyword = ''
   filter.status = ''
+  selectedIds.value = []
 
+  await refresh()
+}
+
+async function applyFilter() {
+  selectedIds.value = []
   await refresh()
 }
 
@@ -204,9 +210,9 @@ function toggleSelectAll() {
     <option value="nonaktif">Nonaktif</option>
   </select>
 
-  <button type="button" @click="refresh">
-    Cari
-  </button>
+  <button type="button" @click="applyFilter">
+  Cari
+</button>
 
   <button type="button" @click="resetFilter">
     Reset
