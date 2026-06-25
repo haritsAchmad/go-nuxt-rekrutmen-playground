@@ -192,9 +192,10 @@ function toggleSelectAll() {
         <input v-model="form.unit" type="text" placeholder="Contoh: Direktorat SDM">
       </div>
 
-      	<button type="submit">
-  	{{ editId ? 'Simpan Perubahan' : 'Tambah Lowongan' }}
-	</button>
+      	<BaseButton
+  type="submit"
+  :label="editId ? 'Simpan Perubahan' : 'Tambah Lowongan'"
+/>
 
 	<button v-if="editId" type="button" @click="resetForm">
   	Batal Edit
