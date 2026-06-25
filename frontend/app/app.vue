@@ -248,6 +248,11 @@ function toggleSelectAll() {
 
 <table v-if="!pending && !error" border="1" cellpadding="8" cellspacing="0">
 
+  <LowonganTableHeader
+    :is-all-selected="isAllSelected"
+    @toggle-select-all="toggleSelectAll"
+  />
+
   <tbody>
     <tr v-for="lowongan in lowonganList" :key="lowongan.id">
 <td>
