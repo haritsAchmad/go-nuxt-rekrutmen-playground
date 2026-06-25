@@ -195,6 +195,7 @@ function toggleSelectAll() {
       	<BaseButton
   type="submit"
   :label="editId ? 'Simpan Perubahan' : 'Tambah Lowongan'"
+  :color="editId ? 'blue' : 'green'"
 />
 
 	<button v-if="editId" type="button" @click="resetForm">
