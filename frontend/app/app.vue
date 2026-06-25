@@ -2,7 +2,8 @@
 const form = reactive({
   judul: '',
   unit: '',
-  status: 'aktif'
+  status: 'aktif',
+jumlah: ''
 })
 
 const filter = reactive({
@@ -192,6 +193,14 @@ function toggleSelectAll() {
     label="Unit"
     placeholder="Contoh: Direktorat SDM"
     v-model="form.unit"
+/>
+
+<BaseInput
+  v-model="form.jumlah"
+  label="Jumlah Dibutuhkan"
+  type="number"
+  placeholder="Contoh: 3"
+  number-only
 />
 
       	<BaseButton

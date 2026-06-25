@@ -1,5 +1,5 @@
 <script setup>
-defineProps({
+const props = defineProps({
   label: {
     type: String,
     default: ''
@@ -8,17 +8,31 @@ defineProps({
     type: String,
     default: ''
   },
-  modelValue: {
+  type: {
     type: String,
+    default: 'text'
+  },
+  modelValue: {
+    type: [String, Number],
     default: ''
   },
-type: {
-  type: String,
-  default: 'text'
-}
+  numberOnly: {
+    type: Boolean,
+    default: false
+  }
 })
 
 defineEmits(['update:modelValue'])
+
+function blockInvalidNumber(event) {
+  if (!props.numberOnly) {
+    return
+  }
+
+  if (['e', 'E', '+', '-', ' '].includes(event.key)) {
+    event.preventDefault()
+  }
+}
 </script>
 
 <template>
@@ -27,10 +41,11 @@ defineEmits(['update:modelValue'])
     <br>
 
     <input
-      :type="type"
-      :value="modelValue"
-      :placeholder="placeholder"
-      @input="$emit('update:modelValue', $event.target.value)"
-    >
+  :type="type"
+  :value="modelValue"
+  :placeholder="placeholder"
+  @keydown="blockInvalidNumber"
+  @input="$emit('update:modelValue', $event.target.value)"
+>
   </div>
 </template>
