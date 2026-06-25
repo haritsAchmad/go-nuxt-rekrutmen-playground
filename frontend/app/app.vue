@@ -12,6 +12,7 @@ const filter = reactive({
 
 const editId = ref(null)
 const selectedIds = ref([])
+const selectedLowongan = ref(null)
 
 const isAllSelected = computed(() => {
   return lowonganList.value.length > 0 &&
@@ -49,6 +50,11 @@ async function resetFilter() {
 async function applyFilter() {
   selectedIds.value = []
   await refresh()
+}
+
+async function showDetail(id) {
+  const result = await $fetch(`http://localhost:8080/api/lowongan/detail?id=${id}`)
+  selectedLowongan.value = result.data
 }
 
 const lowonganList = computed(() => {
@@ -276,6 +282,10 @@ function toggleSelectAll() {
           Edit
         </button>
 
+	<button type="button" @click="showDetail(lowongan.id)">
+  	  Detail
+	</button>
+
         <button type="button" @click="toggleStatus(lowongan)">
           {{ lowongan.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan' }}
         </button>
@@ -287,5 +297,18 @@ function toggleSelectAll() {
     </tr>
   </tbody>
 </table>
+
+<div v-if="selectedLowongan" style="margin-top: 16px;">
+  <h3>Detail Lowongan</h3>
+  <p>ID: {{ selectedLowongan.id }}</p>
+  <p>Judul: {{ selectedLowongan.judul }}</p>
+  <p>Unit: {{ selectedLowongan.unit }}</p>
+  <p>Status: {{ selectedLowongan.status }}</p>
+
+  <button type="button" @click="selectedLowongan = null">
+    Tutup Detail
+  </button>
+</div>
+
   </main>
 </template>

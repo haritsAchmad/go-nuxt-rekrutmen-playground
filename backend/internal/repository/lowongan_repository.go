@@ -50,6 +50,16 @@ func GetAllLowongan(filter domain.LowonganFilterRequest) []domain.Lowongan {
 	return result
 }
 
+func GetLowonganByID(id int) (domain.Lowongan, error) {
+	for _, lowongan := range lowonganData {
+		if lowongan.ID == id {
+			return lowongan, nil
+		}
+	}
+
+	return domain.Lowongan{}, errors.New("lowongan tidak ditemukan")
+}
+
 func CreateLowongan(lowongan domain.Lowongan) domain.Lowongan {
 	maxID := 0
 

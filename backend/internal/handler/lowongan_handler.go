@@ -41,6 +41,31 @@ func GetLowongan(w http.ResponseWriter, r *http.Request) {
 	response.Success(w, "Berhasil mengambil data lowongan", data)
 }
 
+func GetLowonganDetail(w http.ResponseWriter, r *http.Request) {
+	id, err := request.GetIDFromQuery(r)
+	if err != nil {
+		response.Error(w, http.StatusBadRequest, "ID lowongan tidak valid")
+		return
+	}
+
+	data, err := usecase.GetLowonganDetail(id)
+	if err != nil {
+		response.Error(w, http.StatusNotFound, err.Error())
+		return
+	}
+
+	response.Success(w, "Berhasil mengambil detail lowongan", data)
+}
+
+func LowonganDetailHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case http.MethodGet:
+		GetLowonganDetail(w, r)
+	default:
+		response.Error(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
+	}
+}
+
 func CreateLowongan(w http.ResponseWriter, r *http.Request) {
 	var request domain.CreateLowonganRequest
 

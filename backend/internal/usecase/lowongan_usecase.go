@@ -17,6 +17,14 @@ func GetLowonganList(filter domain.LowonganFilterRequest) ([]domain.Lowongan, er
 	return data, nil
 }
 
+func GetLowonganDetail(id int) (domain.Lowongan, error) {
+	if id <= 0 {
+		return domain.Lowongan{}, errors.New("ID lowongan tidak valid")
+	}
+
+	return repository.GetLowonganByID(id)
+}
+
 func CreateLowongan(request domain.CreateLowonganRequest) (domain.Lowongan, error) {
 	if request.Judul == "" || request.Unit == "" {
 		return domain.Lowongan{}, errors.New("judul dan unit wajib diisi")
