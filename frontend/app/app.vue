@@ -185,11 +185,13 @@ function toggleSelectAll() {
       <BaseInput
     label="Judul Lowongan"
     placeholder="Contoh: Backend Developer"
+    v-model="form.judul"
 />
 
       <BaseInput
     label="Unit"
     placeholder="Contoh: Direktorat SDM"
+    v-model="form.unit"
 />
 
       	<BaseButton
