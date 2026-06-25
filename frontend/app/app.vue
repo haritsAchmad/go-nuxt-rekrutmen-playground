@@ -247,22 +247,6 @@ function toggleSelectAll() {
 <p v-else-if="error">Gagal ambil data lowongan</p>
 
 <table v-if="!pending && !error" border="1" cellpadding="8" cellspacing="0">
-  <thead>
-    <tr>
-  <th>
-    <input
-      type="checkbox"
-      :checked="isAllSelected"
-      @change="toggleSelectAll"
-    >
-  </th>
-  <th>ID</th>
-  <th>Judul</th>
-  <th>Unit</th>
-  <th>Status</th>
-  <th>Aksi</th>
-</tr>
-  </thead>
 
   <tbody>
     <tr v-for="lowongan in lowonganList" :key="lowongan.id">
