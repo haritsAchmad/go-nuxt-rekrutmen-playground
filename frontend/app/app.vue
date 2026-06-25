@@ -182,15 +182,15 @@ function toggleSelectAll() {
     <h1>Lowongan Rekrutmen</h1>
 
     <form @submit.prevent="submitLowongan" style="margin-bottom: 24px;">
-      <div style="margin-bottom: 8px;">
-        <label>Judul Lowongan</label><br>
-        <input v-model="form.judul" type="text" placeholder="Contoh: Backend Developer">
-      </div>
+      <BaseInput
+    label="Judul Lowongan"
+    placeholder="Contoh: Backend Developer"
+/>
 
-      <div style="margin-bottom: 8px;">
-        <label>Unit</label><br>
-        <input v-model="form.unit" type="text" placeholder="Contoh: Direktorat SDM">
-      </div>
+      <BaseInput
+    label="Unit"
+    placeholder="Contoh: Direktorat SDM"
+/>
 
       	<BaseButton
   type="submit"
