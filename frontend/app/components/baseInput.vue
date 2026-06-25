@@ -11,7 +11,11 @@ defineProps({
   modelValue: {
     type: String,
     default: ''
-  }
+  },
+type: {
+  type: String,
+  default: 'text'
+}
 })
 
 defineEmits(['update:modelValue'])
@@ -23,7 +27,7 @@ defineEmits(['update:modelValue'])
     <br>
 
     <input
-      type="text"
+      :type="type"
       :value="modelValue"
       :placeholder="placeholder"
       @input="$emit('update:modelValue', $event.target.value)"
