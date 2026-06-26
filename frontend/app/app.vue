@@ -15,6 +15,10 @@ const editId = ref(null)
 const selectedIds = ref([])
 const selectedLowongan = ref(null)
 
+const bulkLoading = ref(false)
+const bulkMessage = ref('')
+const bulkError = ref('')
+
 const isAllSelected = computed(() => {
   return lowonganList.value.length > 0 &&
     selectedIds.value.length === lowonganList.value.length
@@ -115,25 +119,38 @@ async function toggleStatus(lowongan) {
 
 async function bulkUpdateStatus(status) {
   if (selectedIds.value.length === 0) {
-    alert('Pilih minimal satu lowongan')
+    bulkError.value = 'Pilih minimal satu lowongan'
+    bulkMessage.value = ''
     return
   }
 
-  await $fetch('http://localhost:8080/api/lowongan/bulk-status', {
-    method: 'PUT',
-    body: {
-      ids: selectedIds.value,
-      status: status
-    }
-  })
+  bulkLoading.value = true
+  bulkError.value = ''
+  bulkMessage.value = ''
 
-  selectedIds.value = []
-  await refresh()
+  try {
+    await $fetch('http://localhost:8080/api/lowongan/bulk-status', {
+      method: 'PUT',
+      body: {
+        ids: selectedIds.value,
+        status: status
+      }
+    })
+
+    selectedIds.value = []
+    bulkMessage.value = 'Status lowongan terpilih berhasil diubah'
+    await refresh()
+  } catch (error) {
+    bulkError.value = 'Gagal mengubah status lowongan'
+  } finally {
+    bulkLoading.value = false
+  }
 }
 
 async function bulkDelete() {
   if (selectedIds.value.length === 0) {
-    alert('Pilih minimal satu lowongan')
+    bulkError.value = 'Pilih minimal satu lowongan'
+    bulkMessage.value = ''
     return
   }
 
@@ -143,15 +160,26 @@ async function bulkDelete() {
     return
   }
 
-  await $fetch('http://localhost:8080/api/lowongan/bulk-delete', {
-    method: 'DELETE',
-    body: {
-      ids: selectedIds.value
-    }
-  })
+  bulkLoading.value = true
+  bulkError.value = ''
+  bulkMessage.value = ''
 
-  selectedIds.value = []
-  await refresh()
+  try {
+    await $fetch('http://localhost:8080/api/lowongan/bulk-delete', {
+      method: 'DELETE',
+      body: {
+        ids: selectedIds.value
+      }
+    })
+
+    selectedIds.value = []
+    bulkMessage.value = 'Lowongan terpilih berhasil dihapus'
+    await refresh()
+  } catch (error) {
+    bulkError.value = 'Gagal menghapus lowongan'
+  } finally {
+    bulkLoading.value = false
+  }
 }
 
 function editLowongan(lowongan) {
@@ -184,9 +212,10 @@ function toggleSelectAll() {
 
     <form @submit.prevent="submitLowongan" style="margin-bottom: 24px;">
       <BaseInput
-    label="Judul Lowongan"
-    placeholder="Contoh: Backend Developer"
-    v-model="form.judul"
+  v-model="form.judul"
+  label="Judul Lowongan"
+  required
+  maxlength="100"
 />
 
       <BaseInput
@@ -199,6 +228,8 @@ function toggleSelectAll() {
   v-model="form.jumlah"
   label="Jumlah Dibutuhkan"
   type="number"
+  :min="1"
+  :max="100"
   placeholder="Contoh: 3"
   number-only
 />
@@ -242,6 +273,14 @@ function toggleSelectAll() {
   <h3>Bulk Action</h3>
 
   <p>Terpilih: {{ selectedIds.length }} lowongan</p>
+
+<p v-if="bulkMessage" style="color: green;">
+  {{ bulkMessage }}
+</p>
+
+<p v-if="bulkError" style="color: red;">
+  {{ bulkError }}
+</p>
 
   <button type="button" @click="bulkUpdateStatus('aktif')">
     Aktifkan Terpilih
