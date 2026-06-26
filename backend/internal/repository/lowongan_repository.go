@@ -2,24 +2,55 @@ package repository
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
 )
 
-var lowonganData = []domain.Lowongan{
-	{
-		ID:     1,
-		Judul:  "Staf Administrasi",
-		Unit:   "Direktorat SDM",
-		Status: "aktif",
-	},
-	{
-		ID:     2,
-		Judul:  "Backend Developer",
-		Unit:   "Direktorat Sistem Informasi",
-		Status: "aktif",
-	},
+var lowonganData = generateDummyLowongan(1000)
+
+func generateDummyLowongan(total int) []domain.Lowongan {
+	judulList := []string{
+		"Staf Administrasi",
+		"Backend Developer",
+		"Frontend Developer",
+		"QA Engineer",
+		"Data Analyst",
+		"DevOps Engineer",
+		"UI/UX Designer",
+		"System Analyst",
+	}
+
+	unitList := []string{
+		"Direktorat SDM",
+		"Direktorat Sistem Informasi",
+		"Direktorat Keuangan",
+		"Direktorat Akademik",
+		"Direktorat Kemahasiswaan",
+	}
+
+	statusList := []string{
+		"aktif",
+		"nonaktif",
+	}
+
+	result := []domain.Lowongan{}
+
+	for i := 1; i <= total; i++ {
+		judul := judulList[(i-1)%len(judulList)]
+		unit := unitList[(i-1)%len(unitList)]
+		status := statusList[(i-1)%len(statusList)]
+
+		result = append(result, domain.Lowongan{
+			ID:     i,
+			Judul:  fmt.Sprintf("%s %d", judul, i),
+			Unit:   unit,
+			Status: status,
+		})
+	}
+
+	return result
 }
 
 func GetAllLowongan(filter domain.LowonganFilterRequest) []domain.Lowongan {
