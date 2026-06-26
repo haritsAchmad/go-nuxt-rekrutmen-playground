@@ -11,6 +11,15 @@ const filter = reactive({
   status: ''
 })
 
+const paginationMeta = computed(() => {
+  return data.value?.data?.meta || {
+    page: 1,
+    limit: 10,
+    total: 0,
+    total_page: 1
+  }
+})
+
 const editId = ref(null)
 const selectedIds = ref([])
 const selectedLowongan = ref(null)
@@ -18,6 +27,9 @@ const selectedLowongan = ref(null)
 const bulkLoading = ref(false)
 const bulkMessage = ref('')
 const bulkError = ref('')
+
+const page = ref(1)
+const limit = ref(10)
 
 const isAllSelected = computed(() => {
   return lowonganList.value.length > 0 &&
@@ -35,11 +47,10 @@ const apiUrl = computed(() => {
     params.append('status', filter.status)
   }
 
-  const query = params.toString()
+  params.append('page', page.value)
+  params.append('limit', limit.value)
 
-  return query
-    ? `http://localhost:8080/api/lowongan?${query}`
-    : 'http://localhost:8080/api/lowongan'
+  return `http://localhost:8080/api/lowongan?${params.toString()}`
 })
 
 const { data, pending, error, refresh } = await useFetch(apiUrl)
@@ -47,12 +58,13 @@ const { data, pending, error, refresh } = await useFetch(apiUrl)
 async function resetFilter() {
   filter.keyword = ''
   filter.status = ''
+  page.value = 1
   selectedIds.value = []
-
   await refresh()
 }
 
 async function applyFilter() {
+  page.value = 1
   selectedIds.value = []
   await refresh()
 }
@@ -63,7 +75,7 @@ async function showDetail(id) {
 }
 
 const lowonganList = computed(() => {
-  return data.value?.data || []
+  return data.value?.data?.data || []
 })
 
 async function submitLowongan() {
@@ -180,6 +192,26 @@ async function bulkDelete() {
   } finally {
     bulkLoading.value = false
   }
+}
+
+async function nextPage() {
+  if (page.value >= paginationMeta.value.total_page) {
+    return
+  }
+
+  page.value++
+  selectedIds.value = []
+  await refresh()
+}
+
+async function previousPage() {
+  if (page.value <= 1) {
+    return
+  }
+
+  page.value--
+  selectedIds.value = []
+  await refresh()
 }
 
 function editLowongan(lowongan) {
@@ -350,6 +382,29 @@ function toggleSelectAll() {
     </tr>
   </tbody>
 </table>
+
+<div style="margin-top: 16px;">
+  <button
+    type="button"
+    :disabled="page <= 1 || pending"
+    @click="previousPage"
+  >
+    Previous
+  </button>
+
+  <span style="margin: 0 12px;">
+    Page {{ paginationMeta.page }} of {{ paginationMeta.total_page }}
+    — Total {{ paginationMeta.total }} data
+  </span>
+
+  <button
+    type="button"
+    :disabled="page >= paginationMeta.total_page || pending"
+    @click="nextPage"
+  >
+    Next
+  </button>
+</div>
 
 <div v-if="selectedLowongan" style="margin-top: 16px;">
   <h3>Detail Lowongan</h3>
