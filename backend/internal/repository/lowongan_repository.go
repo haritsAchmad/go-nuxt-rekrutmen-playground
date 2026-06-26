@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"math"
 
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
 )
@@ -53,8 +54,8 @@ func generateDummyLowongan(total int) []domain.Lowongan {
 	return result
 }
 
-func GetAllLowongan(filter domain.LowonganFilterRequest) []domain.Lowongan {
-	result := []domain.Lowongan{}
+func GetAllLowongan(filter domain.LowonganFilterRequest) domain.LowonganListResponse {
+	filtered := []domain.Lowongan{}
 
 	keyword := strings.ToLower(filter.Keyword)
 
@@ -74,11 +75,46 @@ func GetAllLowongan(filter domain.LowonganFilterRequest) []domain.Lowongan {
 		}
 
 		if matchKeyword && matchStatus {
-			result = append(result, lowongan)
+			filtered = append(filtered, lowongan)
 		}
 	}
 
-	return result
+	page := filter.Page
+	limit := filter.Limit
+
+	if page <= 0 {
+		page = 1
+	}
+
+	if limit <= 0 {
+		limit = 10
+	}
+
+	total := len(filtered)
+	totalPage := int(math.Ceil(float64(total) / float64(limit)))
+
+	start := (page - 1) * limit
+	end := start + limit
+
+	if start > total {
+		start = total
+	}
+
+	if end > total {
+		end = total
+	}
+
+	paginatedData := filtered[start:end]
+
+	return domain.LowonganListResponse{
+		Data: paginatedData,
+		Meta: domain.LowonganPaginationMeta{
+			Page:      page,
+			Limit:     limit,
+			Total:     total,
+			TotalPage: totalPage,
+		},
+	}
 }
 
 func GetLowonganByID(id int) (domain.Lowongan, error) {

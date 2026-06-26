@@ -25,6 +25,8 @@ type UpdateLowonganRequest struct {
 type LowonganFilterRequest struct {
 	Keyword string
 	Status  string
+	Page    int
+	Limit   int
 }
 
 type BulkUpdateStatusRequest struct {
@@ -34,4 +36,16 @@ type BulkUpdateStatusRequest struct {
 
 type BulkDeleteRequest struct {
 	IDs []int `json:"ids"`
+}
+
+type LowonganPaginationMeta struct {
+	Page      int `json:"page"`
+	Limit     int `json:"limit"`
+	Total     int `json:"total"`
+	TotalPage int `json:"total_page"`
+}
+
+type LowonganListResponse struct {
+	Data []Lowongan             `json:"data"`
+	Meta LowonganPaginationMeta `json:"meta"`
 }

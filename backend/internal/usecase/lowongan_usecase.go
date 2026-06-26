@@ -7,9 +7,9 @@ import (
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/repository"
 )
 
-func GetLowonganList(filter domain.LowonganFilterRequest) ([]domain.Lowongan, error) {
+func GetLowonganList(filter domain.LowonganFilterRequest) (domain.LowonganListResponse, error) {
 	if filter.Status != "" && filter.Status != "aktif" && filter.Status != "nonaktif" {
-		return []domain.Lowongan{}, errors.New("status filter harus aktif atau nonaktif")
+		return domain.LowonganListResponse{}, errors.New("status filter harus aktif atau nonaktif")
 	}
 
 	data := repository.GetAllLowongan(filter)

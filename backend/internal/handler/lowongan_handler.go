@@ -4,6 +4,7 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/request"
@@ -27,9 +28,14 @@ func LowonganHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetLowongan(w http.ResponseWriter, r *http.Request) {
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+
 	filter := domain.LowonganFilterRequest{
 		Keyword: r.URL.Query().Get("keyword"),
 		Status:  r.URL.Query().Get("status"),
+		Page:    page,
+		Limit:   limit,
 	}
 
 	data, err := usecase.GetLowonganList(filter)
