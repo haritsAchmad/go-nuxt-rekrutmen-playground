@@ -53,6 +53,24 @@ const apiUrl = computed(() => {
   return `http://localhost:8080/api/lowongan?${params.toString()}`
 })
 
+const showingFrom = computed(() => {
+  if (paginationMeta.value.total === 0) {
+    return 0
+  }
+
+  return ((paginationMeta.value.page - 1) * paginationMeta.value.limit) + 1
+})
+
+const showingTo = computed(() => {
+  const end = paginationMeta.value.page * paginationMeta.value.limit
+
+  if (end > paginationMeta.value.total) {
+    return paginationMeta.value.total
+  }
+
+  return end
+})
+
 const { data, pending, error, refresh } = await useFetch(apiUrl)
 
 async function resetFilter() {
@@ -64,6 +82,12 @@ async function resetFilter() {
 }
 
 async function applyFilter() {
+  page.value = 1
+  selectedIds.value = []
+  await refresh()
+}
+
+async function changeLimit() {
   page.value = 1
   selectedIds.value = []
   await refresh()
@@ -314,18 +338,47 @@ function toggleSelectAll() {
   {{ bulkError }}
 </p>
 
-  <button type="button" @click="bulkUpdateStatus('aktif')">
-    Aktifkan Terpilih
-  </button>
+<p v-if="bulkLoading">
+  Memproses bulk action...
+</p>
 
-  <button type="button" @click="bulkUpdateStatus('nonaktif')">
-    Nonaktifkan Terpilih
-  </button>
+  <button
+  type="button"
+  :disabled="selectedIds.length === 0 || bulkLoading"
+  @click="bulkUpdateStatus('aktif')"
+>
+  Aktifkan Terpilih
+</button>
 
-  <button type="button" @click="bulkDelete">
-    Hapus Terpilih
-  </button>
+<button
+  type="button"
+  :disabled="selectedIds.length === 0 || bulkLoading"
+  @click="bulkUpdateStatus('nonaktif')"
+>
+  Nonaktifkan Terpilih
+</button>
+
+<button
+  type="button"
+  :disabled="selectedIds.length === 0 || bulkLoading"
+  @click="bulkDelete"
+>
+  Hapus Terpilih
+</button>
+
+    <select
+      v-model="limit"
+      :disabled="pending"
+      style="margin-left: 12px;"
+      @change="changeLimit"
+    >
+      <option :value="5">5 / page</option>
+      <option :value="10">10 / page</option>
+      <option :value="25">25 / page</option>
+      <option :value="50">50 / page</option>
+    </select>
 </div>
+
 
 <p v-if="pending">Loading...</p>
 <p v-else-if="error">Gagal ambil data lowongan</p>
@@ -384,26 +437,12 @@ function toggleSelectAll() {
 </table>
 
 <div style="margin-top: 16px;">
-  <button
-    type="button"
-    :disabled="page <= 1 || pending"
-    @click="previousPage"
-  >
-    Previous
-  </button>
-
-  <span style="margin: 0 12px;">
-    Page {{ paginationMeta.page }} of {{ paginationMeta.total_page }}
-    — Total {{ paginationMeta.total }} data
-  </span>
-
-  <button
-    type="button"
-    :disabled="page >= paginationMeta.total_page || pending"
-    @click="nextPage"
-  >
-    Next
-  </button>
+  <div style="margin-bottom: 8px;">
+    <span>
+      Menampilkan {{ showingFrom }} - {{ showingTo }}
+      dari {{ paginationMeta.total }} data
+    </span>
+  </div>
 </div>
 
 <div v-if="selectedLowongan" style="margin-top: 16px;">
