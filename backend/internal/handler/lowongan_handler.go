@@ -3,14 +3,51 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
-	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/request"
-	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/response"
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/usecase"
 )
+
+type apiResponse struct {
+	Success bool   `json:"success"`
+	Message string `json:"message,omitempty"`
+	Data    any    `json:"data,omitempty"`
+}
+
+func writeJSON(w http.ResponseWriter, statusCode int, success bool, message string, data any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+
+	_ = json.NewEncoder(w).Encode(apiResponse{
+		Success: success,
+		Message: message,
+		Data:    data,
+	})
+}
+
+func success(w http.ResponseWriter, message string, data any) {
+	writeJSON(w, http.StatusOK, true, message, data)
+}
+
+func created(w http.ResponseWriter, message string, data any) {
+	writeJSON(w, http.StatusCreated, true, message, data)
+}
+
+func errorResponse(w http.ResponseWriter, statusCode int, message string) {
+	writeJSON(w, statusCode, false, message, nil)
+}
+
+func getIDFromQuery(r *http.Request) (int, error) {
+	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+	if err != nil || id <= 0 {
+		return 0, errors.New("ID tidak valid")
+	}
+
+	return id, nil
+}
 
 func LowonganHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -23,7 +60,7 @@ func LowonganHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		DeleteLowongan(w, r)
 	default:
-		response.Error(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
+		errorResponse(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
 	}
 }
 
@@ -40,27 +77,27 @@ func GetLowongan(w http.ResponseWriter, r *http.Request) {
 
 	data, err := usecase.GetLowonganList(filter)
 	if err != nil {
-		response.Error(w, http.StatusBadRequest, err.Error())
+		errorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	response.Success(w, "Berhasil mengambil data lowongan", data)
+	success(w, "Berhasil mengambil data lowongan", data)
 }
 
 func GetLowonganDetail(w http.ResponseWriter, r *http.Request) {
-	id, err := request.GetIDFromQuery(r)
+	id, err := getIDFromQuery(r)
 	if err != nil {
-		response.Error(w, http.StatusBadRequest, "ID lowongan tidak valid")
+		errorResponse(w, http.StatusBadRequest, "ID lowongan tidak valid")
 		return
 	}
 
 	data, err := usecase.GetLowonganDetail(id)
 	if err != nil {
-		response.Error(w, http.StatusNotFound, err.Error())
+		errorResponse(w, http.StatusNotFound, err.Error())
 		return
 	}
 
-	response.Success(w, "Berhasil mengambil detail lowongan", data)
+	success(w, "Berhasil mengambil detail lowongan", data)
 }
 
 func LowonganDetailHandler(w http.ResponseWriter, r *http.Request) {
@@ -68,7 +105,7 @@ func LowonganDetailHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodGet:
 		GetLowonganDetail(w, r)
 	default:
-		response.Error(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
+		errorResponse(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
 	}
 }
 
@@ -77,39 +114,39 @@ func CreateLowongan(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		response.Error(w, http.StatusBadRequest, "Format JSON tidak valid")
+		errorResponse(w, http.StatusBadRequest, "Format JSON tidak valid")
 		return
 	}
 
 	newLowongan, err := usecase.CreateLowongan(request)
 	if err != nil {
-		response.Error(w, http.StatusBadRequest, err.Error())
+		errorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	response.Created(w, "Lowongan berhasil ditambahkan", newLowongan)
+	created(w, "Lowongan berhasil ditambahkan", newLowongan)
 }
 
 func DeleteLowongan(w http.ResponseWriter, r *http.Request) {
-	id, err := request.GetIDFromQuery(r)
+	id, err := getIDFromQuery(r)
 	if err != nil {
-		response.Error(w, http.StatusBadRequest, "ID lowongan tidak valid")
+		errorResponse(w, http.StatusBadRequest, "ID lowongan tidak valid")
 		return
 	}
 
 	err = usecase.DeleteLowongan(id)
 	if err != nil {
-		response.Error(w, http.StatusNotFound, err.Error())
+		errorResponse(w, http.StatusNotFound, err.Error())
 		return
 	}
 
-	response.Success(w, "Lowongan berhasil dihapus", nil)
+	success(w, "Lowongan berhasil dihapus", nil)
 }
 
 func UpdateLowonganStatus(w http.ResponseWriter, r *http.Request) {
-	id, err := request.GetIDFromQuery(r)
+	id, err := getIDFromQuery(r)
 	if err != nil {
-		response.Error(w, http.StatusBadRequest, "ID lowongan tidak valid")
+		errorResponse(w, http.StatusBadRequest, "ID lowongan tidak valid")
 		return
 	}
 
@@ -117,23 +154,23 @@ func UpdateLowonganStatus(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		response.Error(w, http.StatusBadRequest, "Format JSON tidak valid")
+		errorResponse(w, http.StatusBadRequest, "Format JSON tidak valid")
 		return
 	}
 
 	updatedLowongan, err := usecase.UpdateLowonganStatus(id, request)
 	if err != nil {
-		response.Error(w, http.StatusBadRequest, err.Error())
+		errorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	response.Success(w, "Status lowongan berhasil diubah", updatedLowongan)
+	success(w, "Status lowongan berhasil diubah", updatedLowongan)
 }
 
 func UpdateLowongan(w http.ResponseWriter, r *http.Request) {
-	id, err := request.GetIDFromQuery(r)
+	id, err := getIDFromQuery(r)
 	if err != nil {
-		response.Error(w, http.StatusBadRequest, "ID lowongan tidak valid")
+		errorResponse(w, http.StatusBadRequest, "ID lowongan tidak valid")
 		return
 	}
 
@@ -141,17 +178,17 @@ func UpdateLowongan(w http.ResponseWriter, r *http.Request) {
 
 	err = json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		response.Error(w, http.StatusBadRequest, "Format JSON tidak valid")
+		errorResponse(w, http.StatusBadRequest, "Format JSON tidak valid")
 		return
 	}
 
 	updatedLowongan, err := usecase.UpdateLowongan(id, request)
 	if err != nil {
-		response.Error(w, http.StatusBadRequest, err.Error())
+		errorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	response.Success(w, "Lowongan berhasil diubah", updatedLowongan)
+	success(w, "Lowongan berhasil diubah", updatedLowongan)
 }
 
 func LowonganStatusHandler(w http.ResponseWriter, r *http.Request) {
@@ -159,7 +196,7 @@ func LowonganStatusHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPut:
 		UpdateLowonganStatus(w, r)
 	default:
-		response.Error(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
+		errorResponse(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
 	}
 }
 
@@ -168,17 +205,17 @@ func BulkUpdateLowonganStatus(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		response.Error(w, http.StatusBadRequest, "Format JSON tidak valid")
+		errorResponse(w, http.StatusBadRequest, "Format JSON tidak valid")
 		return
 	}
 
 	err = usecase.BulkUpdateLowonganStatus(request)
 	if err != nil {
-		response.Error(w, http.StatusBadRequest, err.Error())
+		errorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	response.Success(w, "Status lowongan terpilih berhasil diubah", nil)
+	success(w, "Status lowongan terpilih berhasil diubah", nil)
 }
 
 func BulkDeleteLowongan(w http.ResponseWriter, r *http.Request) {
@@ -186,17 +223,17 @@ func BulkDeleteLowongan(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		response.Error(w, http.StatusBadRequest, "Format JSON tidak valid")
+		errorResponse(w, http.StatusBadRequest, "Format JSON tidak valid")
 		return
 	}
 
 	err = usecase.BulkDeleteLowongan(request)
 	if err != nil {
-		response.Error(w, http.StatusBadRequest, err.Error())
+		errorResponse(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	response.Success(w, "Lowongan terpilih berhasil dihapus", nil)
+	success(w, "Lowongan terpilih berhasil dihapus", nil)
 }
 
 func LowonganBulkStatusHandler(w http.ResponseWriter, r *http.Request) {
@@ -204,7 +241,7 @@ func LowonganBulkStatusHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPut:
 		BulkUpdateLowonganStatus(w, r)
 	default:
-		response.Error(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
+		errorResponse(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
 	}
 }
 
@@ -213,6 +250,6 @@ func LowonganBulkDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	case http.MethodDelete:
 		BulkDeleteLowongan(w, r)
 	default:
-		response.Error(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
+		errorResponse(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
 	}
 }
