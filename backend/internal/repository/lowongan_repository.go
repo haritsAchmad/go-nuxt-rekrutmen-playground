@@ -3,8 +3,8 @@ package repository
 import (
 	"errors"
 	"fmt"
-	"strings"
 	"math"
+	"strings"
 
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
 )
