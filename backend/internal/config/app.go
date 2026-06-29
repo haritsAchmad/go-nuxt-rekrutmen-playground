@@ -32,7 +32,7 @@ func Load() Config {
 			Host:     GetString("DB_HOST", "localhost"),
 			Port:     GetInt("DB_PORT", 5432),
 			User:     GetString("DB_USER", "postgres"),
-			Password: GetString("DB_PASSWORD", "admin"),
+			Password: GetString("DB_PASSWORD", ""),
 			Name:     GetString("DB_NAME", "playground"),
 			Schema:   GetString("DB_SCHEMA", "rekrutmen_playground"),
 			SSLMode:  GetString("DB_SSLMODE", "disable"),
