@@ -27,6 +27,8 @@ const selectedLowongan = ref(null)
 const bulkLoading = ref(false)
 const bulkMessage = ref('')
 const bulkError = ref('')
+const actionMessage = ref('')
+const actionError = ref('')
 
 const page = ref(1)
 const limit = ref(10)
@@ -104,6 +106,18 @@ function clearPageState() {
   selectedLowongan.value = null
   bulkMessage.value = ''
   bulkError.value = ''
+  actionMessage.value = ''
+  actionError.value = ''
+}
+
+function setActionMessage(message) {
+  actionMessage.value = message
+  actionError.value = ''
+}
+
+function setActionError(message) {
+  actionMessage.value = ''
+  actionError.value = message
 }
 
 async function logout() {
@@ -130,18 +144,21 @@ async function resetFilter() {
   page.value = 1
   selectedIds.value = []
   await refresh()
+  setActionMessage('Filter berhasil direset')
 }
 
 async function applyFilter() {
   page.value = 1
   selectedIds.value = []
   await refresh()
+  setActionMessage('Filter berhasil diterapkan')
 }
 
 async function changeLimit() {
   page.value = 1
   selectedIds.value = []
   await refresh()
+  setActionMessage('Jumlah data per halaman berhasil diubah')
 }
 
 async function showDetail(id) {
@@ -150,13 +167,18 @@ async function showDetail(id) {
       headers: authHeaders.value
     })
     selectedLowongan.value = result.data
+    setActionMessage('Detail lowongan berhasil dimuat')
   } catch (error) {
-    handleUnauthorized(error)
+    if (!handleUnauthorized(error)) {
+      setActionError('Gagal memuat detail lowongan')
+    }
   }
 }
 
 async function submitLowongan() {
   try {
+    const isEditing = Boolean(editId.value)
+
     if (editId.value) {
       await $fetch(`http://localhost:8080/api/lowongan?id=${editId.value}`, {
         method: 'PUT',
@@ -180,8 +202,11 @@ async function submitLowongan() {
 
     resetForm()
     await refresh()
+    setActionMessage(isEditing ? 'Lowongan berhasil diperbarui' : 'Lowongan berhasil ditambahkan')
   } catch (error) {
-    handleUnauthorized(error)
+    if (!handleUnauthorized(error)) {
+      setActionError(editId.value ? 'Gagal memperbarui lowongan' : 'Gagal menambahkan lowongan')
+    }
   }
 }
 
@@ -199,8 +224,11 @@ async function deleteLowongan(id) {
     })
 
     await refresh()
+    setActionMessage('Lowongan berhasil dihapus')
   } catch (error) {
-    handleUnauthorized(error)
+    if (!handleUnauthorized(error)) {
+      setActionError('Gagal menghapus lowongan')
+    }
   }
 }
 
@@ -217,8 +245,11 @@ async function toggleStatus(lowongan) {
     })
 
     await refresh()
+    setActionMessage('Status lowongan berhasil diubah')
   } catch (error) {
-    handleUnauthorized(error)
+    if (!handleUnauthorized(error)) {
+      setActionError('Gagal mengubah status lowongan')
+    }
   }
 }
 
@@ -351,6 +382,14 @@ function toggleSelectAll() {
         Logout
       </button>
     </header>
+
+    <p v-if="actionMessage" style="padding: 10px 12px; color: #166534; background: #dcfce7; border: 1px solid #86efac; margin-bottom: 16px;">
+      {{ actionMessage }}
+    </p>
+
+    <p v-if="actionError" style="padding: 10px 12px; color: #991b1b; background: #fee2e2; border: 1px solid #fca5a5; margin-bottom: 16px;">
+      {{ actionError }}
+    </p>
 
     <form @submit.prevent="submitLowongan" style="margin-bottom: 24px;">
       <BaseInput

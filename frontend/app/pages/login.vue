@@ -3,7 +3,7 @@ const authStore = useAuthStore()
 
 const loginForm = reactive({
   email: 'admin@example.com',
-  password: ''
+  password: 'admin123'
 })
 
 onMounted(() => {
