@@ -3,18 +3,21 @@ package domain
 import "time"
 
 type Lowongan struct {
-	ID           int
-	Judul        string
-	Unit         string
-	TanggalBuka  time.Time
-	TanggalTutup time.Time
-	Deskripsi    string
-	Status       string
+	ID           int        `json:"id"`
+	Judul        string     `json:"judul"`
+	Unit         string     `json:"unit"`
+	TanggalBuka  *time.Time `json:"tanggalBuka,omitempty"`
+	TanggalTutup *time.Time `json:"tanggalTutup,omitempty"`
+	Deskripsi    string     `json:"deskripsi"`
+	Status       string     `json:"status"`
 }
 
 type CreateLowonganRequest struct {
-	Judul string `json:"judul"`
-	Unit  string `json:"unit"`
+	Judul        string `json:"judul"`
+	Unit         string `json:"unit"`
+	TanggalBuka  string `json:"tanggalBuka"`
+	TanggalTutup string `json:"tanggalTutup"`
+	Deskripsi    string `json:"deskripsi"`
 }
 
 type UpdateLowonganStatusRequest struct {
@@ -22,9 +25,12 @@ type UpdateLowonganStatusRequest struct {
 }
 
 type UpdateLowonganRequest struct {
-	Judul  string `json:"judul"`
-	Unit   string `json:"unit"`
-	Status string `json:"status"`
+	Judul        string `json:"judul"`
+	Unit         string `json:"unit"`
+	TanggalBuka  string `json:"tanggalBuka"`
+	TanggalTutup string `json:"tanggalTutup"`
+	Deskripsi    string `json:"deskripsi"`
+	Status       string `json:"status"`
 }
 
 type LowonganFilterRequest struct {

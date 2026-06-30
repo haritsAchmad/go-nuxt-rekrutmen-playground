@@ -2,9 +2,11 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"math"
 	"strings"
+	"time"
 
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
 	"github.com/jackc/pgx/v5"
@@ -19,6 +21,14 @@ func NewLowonganRepository(db *pgxpool.Pool) *LowonganRepository {
 	return &LowonganRepository{
 		db: db,
 	}
+}
+
+func nullableTimeToPointer(value sql.NullTime) *time.Time {
+	if !value.Valid {
+		return nil
+	}
+
+	return &value.Time
 }
 
 func (r *LowonganRepository) GetAllLowongan(filter domain.LowonganFilterRequest) (domain.LowonganListResponse, error) {
@@ -45,7 +55,7 @@ func (r *LowonganRepository) GetAllLowongan(filter domain.LowonganFilterRequest)
 	`
 
 	rows, err := r.db.Query(ctx, `
-		SELECT id, judul, unit, status
+		SELECT id, judul, unit, tanggal_buka, tanggal_tutup, COALESCE(deskripsi, ''), status
 		FROM lowongan
 	`+whereQuery+`
 		ORDER BY id
@@ -60,17 +70,24 @@ func (r *LowonganRepository) GetAllLowongan(filter domain.LowonganFilterRequest)
 
 	for rows.Next() {
 		var lowongan domain.Lowongan
+		var tanggalBuka sql.NullTime
+		var tanggalTutup sql.NullTime
 
 		err := rows.Scan(
 			&lowongan.ID,
 			&lowongan.Judul,
 			&lowongan.Unit,
+			&tanggalBuka,
+			&tanggalTutup,
+			&lowongan.Deskripsi,
 			&lowongan.Status,
 		)
 		if err != nil {
 			return domain.LowonganListResponse{}, err
 		}
 
+		lowongan.TanggalBuka = nullableTimeToPointer(tanggalBuka)
+		lowongan.TanggalTutup = nullableTimeToPointer(tanggalTutup)
 		data = append(data, lowongan)
 	}
 
@@ -105,15 +122,20 @@ func (r *LowonganRepository) GetLowonganByID(id int) (domain.Lowongan, error) {
 	ctx := context.Background()
 
 	var lowongan domain.Lowongan
+	var tanggalBuka sql.NullTime
+	var tanggalTutup sql.NullTime
 
 	err := r.db.QueryRow(ctx, `
-		SELECT id, judul, unit, status
+		SELECT id, judul, unit, tanggal_buka, tanggal_tutup, COALESCE(deskripsi, ''), status
 		FROM lowongan
 		WHERE id = $1
 	`, id).Scan(
 		&lowongan.ID,
 		&lowongan.Judul,
 		&lowongan.Unit,
+		&tanggalBuka,
+		&tanggalTutup,
+		&lowongan.Deskripsi,
 		&lowongan.Status,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -123,26 +145,35 @@ func (r *LowonganRepository) GetLowonganByID(id int) (domain.Lowongan, error) {
 		return domain.Lowongan{}, err
 	}
 
+	lowongan.TanggalBuka = nullableTimeToPointer(tanggalBuka)
+	lowongan.TanggalTutup = nullableTimeToPointer(tanggalTutup)
 	return lowongan, nil
 }
 
 func (r *LowonganRepository) CreateLowongan(lowongan domain.Lowongan) (domain.Lowongan, error) {
 	ctx := context.Background()
+	var tanggalBuka sql.NullTime
+	var tanggalTutup sql.NullTime
 
 	err := r.db.QueryRow(ctx, `
-		INSERT INTO lowongan (judul, unit, status)
-		VALUES ($1, $2, $3)
-		RETURNING id, judul, unit, status
-	`, lowongan.Judul, lowongan.Unit, lowongan.Status).Scan(
+		INSERT INTO lowongan (judul, unit, tanggal_buka, tanggal_tutup, deskripsi, status)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id, judul, unit, tanggal_buka, tanggal_tutup, COALESCE(deskripsi, ''), status
+	`, lowongan.Judul, lowongan.Unit, lowongan.TanggalBuka, lowongan.TanggalTutup, lowongan.Deskripsi, lowongan.Status).Scan(
 		&lowongan.ID,
 		&lowongan.Judul,
 		&lowongan.Unit,
+		&tanggalBuka,
+		&tanggalTutup,
+		&lowongan.Deskripsi,
 		&lowongan.Status,
 	)
 	if err != nil {
 		return domain.Lowongan{}, err
 	}
 
+	lowongan.TanggalBuka = nullableTimeToPointer(tanggalBuka)
+	lowongan.TanggalTutup = nullableTimeToPointer(tanggalTutup)
 	return lowongan, nil
 }
 
@@ -168,16 +199,21 @@ func (r *LowonganRepository) UpdateLowonganStatus(id int, status string) (domain
 	ctx := context.Background()
 
 	var lowongan domain.Lowongan
+	var tanggalBuka sql.NullTime
+	var tanggalTutup sql.NullTime
 
 	err := r.db.QueryRow(ctx, `
 		UPDATE lowongan
 		SET status = $1
 		WHERE id = $2
-		RETURNING id, judul, unit, status
+		RETURNING id, judul, unit, tanggal_buka, tanggal_tutup, COALESCE(deskripsi, ''), status
 	`, status, id).Scan(
 		&lowongan.ID,
 		&lowongan.Judul,
 		&lowongan.Unit,
+		&tanggalBuka,
+		&tanggalTutup,
+		&lowongan.Deskripsi,
 		&lowongan.Status,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -187,6 +223,8 @@ func (r *LowonganRepository) UpdateLowonganStatus(id int, status string) (domain
 		return domain.Lowongan{}, err
 	}
 
+	lowongan.TanggalBuka = nullableTimeToPointer(tanggalBuka)
+	lowongan.TanggalTutup = nullableTimeToPointer(tanggalTutup)
 	return lowongan, nil
 }
 
@@ -194,16 +232,21 @@ func (r *LowonganRepository) UpdateLowongan(id int, updatedLowongan domain.Lowon
 	ctx := context.Background()
 
 	var lowongan domain.Lowongan
+	var tanggalBuka sql.NullTime
+	var tanggalTutup sql.NullTime
 
 	err := r.db.QueryRow(ctx, `
 		UPDATE lowongan
-		SET judul = $1, unit = $2, status = $3
-		WHERE id = $4
-		RETURNING id, judul, unit, status
-	`, updatedLowongan.Judul, updatedLowongan.Unit, updatedLowongan.Status, id).Scan(
+		SET judul = $1, unit = $2, tanggal_buka = $3, tanggal_tutup = $4, deskripsi = $5, status = $6
+		WHERE id = $7
+		RETURNING id, judul, unit, tanggal_buka, tanggal_tutup, COALESCE(deskripsi, ''), status
+	`, updatedLowongan.Judul, updatedLowongan.Unit, updatedLowongan.TanggalBuka, updatedLowongan.TanggalTutup, updatedLowongan.Deskripsi, updatedLowongan.Status, id).Scan(
 		&lowongan.ID,
 		&lowongan.Judul,
 		&lowongan.Unit,
+		&tanggalBuka,
+		&tanggalTutup,
+		&lowongan.Deskripsi,
 		&lowongan.Status,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -213,6 +256,8 @@ func (r *LowonganRepository) UpdateLowongan(id int, updatedLowongan domain.Lowon
 		return domain.Lowongan{}, err
 	}
 
+	lowongan.TanggalBuka = nullableTimeToPointer(tanggalBuka)
+	lowongan.TanggalTutup = nullableTimeToPointer(tanggalTutup)
 	return lowongan, nil
 }
 

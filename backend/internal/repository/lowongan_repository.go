@@ -50,10 +50,11 @@ func generateDummyLowongan(total int) []domain.Lowongan {
 		status := statusList[(i-1)%len(statusList)]
 
 		result = append(result, domain.Lowongan{
-			ID:     i,
-			Judul:  fmt.Sprintf("%s %d", judul, i),
-			Unit:   unit,
-			Status: status,
+			ID:        i,
+			Judul:     fmt.Sprintf("%s %d", judul, i),
+			Unit:      unit,
+			Deskripsi: fmt.Sprintf("Deskripsi singkat untuk %s %d", judul, i),
+			Status:    status,
 		})
 	}
 
@@ -199,6 +200,9 @@ func UpdateLowongan(id int, updatedLowongan domain.Lowongan) (domain.Lowongan, e
 		if lowongan.ID == id {
 			lowonganData[index].Judul = updatedLowongan.Judul
 			lowonganData[index].Unit = updatedLowongan.Unit
+			lowonganData[index].TanggalBuka = updatedLowongan.TanggalBuka
+			lowonganData[index].TanggalTutup = updatedLowongan.TanggalTutup
+			lowonganData[index].Deskripsi = updatedLowongan.Deskripsi
 			lowonganData[index].Status = updatedLowongan.Status
 
 			return lowonganData[index], nil

@@ -11,6 +11,9 @@ const authHeaders = computed(() => authStore.authHeaders)
 const form = reactive({
   judul: '',
   unit: '',
+  tanggalBuka: '',
+  tanggalTutup: '',
+  deskripsi: '',
   status: 'aktif'
 })
 
@@ -31,6 +34,7 @@ const actionError = ref('')
 
 const page = ref(1)
 const limit = ref(10)
+const today = new Date().toISOString().slice(0, 10)
 
 const apiUrl = computed(() => {
   const params = new URLSearchParams()
@@ -66,7 +70,17 @@ const paginationMeta = computed(() => {
 })
 
 const lowonganList = computed(() => {
-  return data.value?.data?.data || []
+  const items = data.value?.data?.data || []
+
+  return items.map((lowongan) => ({
+    id: lowongan.id ?? lowongan.ID,
+    judul: lowongan.judul ?? lowongan.Judul ?? '',
+    unit: lowongan.unit ?? lowongan.Unit ?? '',
+    tanggalBuka: lowongan.tanggalBuka ?? lowongan.tanggal_buka ?? lowongan.TanggalBuka ?? '',
+    tanggalTutup: lowongan.tanggalTutup ?? lowongan.tanggal_tutup ?? lowongan.TanggalTutup ?? '',
+    deskripsi: lowongan.deskripsi ?? lowongan.Deskripsi ?? '',
+    status: lowongan.status ?? lowongan.Status ?? ''
+  }))
 })
 
 const isAllSelected = computed(() => {
@@ -119,6 +133,69 @@ function setActionError(message) {
   actionError.value = message
 }
 
+function buildLowonganPayload(includeStatus = false) {
+  const payload = {
+    judul: form.judul,
+    unit: form.unit,
+    tanggalBuka: form.tanggalBuka,
+    tanggalTutup: form.tanggalTutup,
+    deskripsi: form.deskripsi
+  }
+
+  if (includeStatus) {
+    payload.status = form.status || 'aktif'
+  }
+
+  return payload
+}
+
+function validateDateRange() {
+  if (form.tanggalBuka && form.tanggalTutup && form.tanggalBuka > form.tanggalTutup) {
+    setActionError('Tanggal buka tidak boleh melewati tanggal tutup')
+    return false
+  }
+
+  if (actionError.value === 'Tanggal buka tidak boleh melewati tanggal tutup') {
+    actionError.value = ''
+  }
+
+  return true
+}
+
+function normalizeLowongan(lowongan) {
+  if (!lowongan) {
+    return null
+  }
+
+  return {
+    id: lowongan.id ?? lowongan.ID,
+    judul: lowongan.judul ?? lowongan.Judul ?? '',
+    unit: lowongan.unit ?? lowongan.Unit ?? '',
+    tanggalBuka: lowongan.tanggalBuka ?? lowongan.tanggal_buka ?? lowongan.TanggalBuka ?? '',
+    tanggalTutup: lowongan.tanggalTutup ?? lowongan.tanggal_tutup ?? lowongan.TanggalTutup ?? '',
+    deskripsi: lowongan.deskripsi ?? lowongan.Deskripsi ?? '',
+    status: lowongan.status ?? lowongan.Status ?? ''
+  }
+}
+
+function formatDate(value) {
+  if (!value || String(value).startsWith('0001-01-01')) {
+    return '-'
+  }
+
+  return String(value).slice(0, 10)
+}
+
+function dateForEdit(value) {
+  const formattedDate = formatDate(value)
+
+  if (formattedDate === '-') {
+    return today
+  }
+
+  return formattedDate
+}
+
 async function logout() {
   authStore.logout()
   clearPageState()
@@ -165,7 +242,7 @@ async function showDetail(id) {
     const result = await $fetch(`http://localhost:8080/api/lowongan/detail?id=${id}`, {
       headers: authHeaders.value
     })
-    selectedLowongan.value = result.data
+    selectedLowongan.value = normalizeLowongan(result.data)
     setActionMessage('Detail lowongan berhasil dimuat')
   } catch (error) {
     if (!handleUnauthorized(error)) {
@@ -175,6 +252,10 @@ async function showDetail(id) {
 }
 
 async function submitLowongan() {
+  if (!validateDateRange()) {
+    return
+  }
+
   try {
     const isEditing = Boolean(editId.value)
 
@@ -182,20 +263,13 @@ async function submitLowongan() {
       await $fetch(`http://localhost:8080/api/lowongan?id=${editId.value}`, {
         method: 'PUT',
         headers: authHeaders.value,
-        body: {
-          judul: form.judul,
-          unit: form.unit,
-          status: form.status || 'aktif'
-        }
+        body: buildLowonganPayload(true)
       })
     } else {
       await $fetch('http://localhost:8080/api/lowongan', {
         method: 'POST',
         headers: authHeaders.value,
-        body: {
-          judul: form.judul,
-          unit: form.unit
-        }
+        body: buildLowonganPayload()
       })
     }
 
@@ -347,6 +421,9 @@ function editLowongan(lowongan) {
   editId.value = lowongan.id
   form.judul = lowongan.judul
   form.unit = lowongan.unit
+  form.tanggalBuka = dateForEdit(lowongan.tanggalBuka)
+  form.tanggalTutup = dateForEdit(lowongan.tanggalTutup)
+  form.deskripsi = lowongan.deskripsi
   form.status = lowongan.status
 }
 
@@ -354,6 +431,9 @@ function resetForm() {
   editId.value = null
   form.judul = ''
   form.unit = ''
+  form.tanggalBuka = ''
+  form.tanggalTutup = ''
+  form.deskripsi = ''
   form.status = 'aktif'
 }
 
@@ -382,33 +462,57 @@ function toggleSelectAll() {
       </button>
     </header>
 
-    <p v-if="actionMessage" style="padding: 10px 12px; color: #166534; background: #dcfce7; border: 1px solid #86efac; margin-bottom: 16px;">
+    <p v-if="actionMessage"
+      style="padding: 10px 12px; color: #166534; background: #dcfce7; border: 1px solid #86efac; margin-bottom: 16px;">
       {{ actionMessage }}
     </p>
 
-    <p v-if="actionError" style="padding: 10px 12px; color: #991b1b; background: #fee2e2; border: 1px solid #fca5a5; margin-bottom: 16px;">
+    <p v-if="actionError"
+      style="padding: 10px 12px; color: #991b1b; background: #fee2e2; border: 1px solid #fca5a5; margin-bottom: 16px;">
       {{ actionError }}
     </p>
 
     <form @submit.prevent="submitLowongan" style="margin-bottom: 24px;">
+      <BaseInput v-model="form.judul" label="Judul Lowongan" required maxlength="100" />
+
+      <BaseInput v-model="form.unit" label="Unit" placeholder="Contoh: Direktorat SDM" />
+
       <BaseInput
-        v-model="form.judul"
-        label="Judul Lowongan"
-        required
-        maxlength="100"
+        v-model="form.tanggalBuka"
+        label="Tanggal Buka"
+        type="date"
+        :max="form.tanggalTutup || null"
+        @change="validateDateRange"
       />
 
       <BaseInput
-        v-model="form.unit"
-        label="Unit"
-        placeholder="Contoh: Direktorat SDM"
+        v-model="form.tanggalTutup"
+        label="Tanggal Tutup"
+        type="date"
+        :min="form.tanggalBuka || null"
+        @change="validateDateRange"
       />
 
-      <BaseButton
-        type="submit"
-        :label="editId ? 'Simpan Perubahan' : 'Tambah Lowongan'"
-        :color="editId ? 'blue' : 'green'"
-      />
+      <div style="margin-bottom: 12px;">
+        <label>Deskripsi</label>
+        <textarea
+          v-model="form.deskripsi"
+          rows="4"
+          placeholder="Tulis ringkasan pekerjaan, tanggung jawab, atau kualifikasi utama"
+          style="width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box;"
+        ></textarea>
+      </div>
+
+      <div v-if="editId" style="margin-bottom: 12px;">
+        <label>Status</label>
+        <select v-model="form.status" style="display: block; padding: 8px; margin-top: 4px;">
+          <option value="aktif">Aktif</option>
+          <option value="nonaktif">Nonaktif</option>
+        </select>
+      </div>
+
+      <BaseButton type="submit" :label="editId ? 'Simpan Perubahan' : 'Buka Lowongan'"
+        :color="editId ? 'blue' : 'green'" />
 
       <button v-if="editId" type="button" @click="resetForm">
         Batal Edit
@@ -418,11 +522,7 @@ function toggleSelectAll() {
     <div style="margin-bottom: 16px;">
       <h3>Filter Lowongan</h3>
 
-      <input
-        v-model="filter.keyword"
-        type="text"
-        placeholder="Cari judul/unit"
-      >
+      <input v-model="filter.keyword" type="text" placeholder="Cari judul/unit">
 
       <select v-model="filter.status">
         <option value="">Semua Status</option>
@@ -456,36 +556,19 @@ function toggleSelectAll() {
         Memproses bulk action...
       </p>
 
-      <button
-        type="button"
-        :disabled="selectedIds.length === 0 || bulkLoading"
-        @click="bulkUpdateStatus('aktif')"
-      >
+      <button type="button" :disabled="selectedIds.length === 0 || bulkLoading" @click="bulkUpdateStatus('aktif')">
         Aktifkan Terpilih
       </button>
 
-      <button
-        type="button"
-        :disabled="selectedIds.length === 0 || bulkLoading"
-        @click="bulkUpdateStatus('nonaktif')"
-      >
+      <button type="button" :disabled="selectedIds.length === 0 || bulkLoading" @click="bulkUpdateStatus('nonaktif')">
         Nonaktifkan Terpilih
       </button>
 
-      <button
-        type="button"
-        :disabled="selectedIds.length === 0 || bulkLoading"
-        @click="bulkDelete"
-      >
+      <button type="button" :disabled="selectedIds.length === 0 || bulkLoading" @click="bulkDelete">
         Hapus Terpilih
       </button>
 
-      <select
-        v-model="limit"
-        :disabled="pending"
-        style="margin-left: 12px;"
-        @change="changeLimit"
-      >
+      <select v-model="limit" :disabled="pending" style="margin-left: 12px;" @change="changeLimit">
         <option :value="5">5 / page</option>
         <option :value="10">10 / page</option>
         <option :value="25">25 / page</option>
@@ -500,16 +583,15 @@ function toggleSelectAll() {
       <thead>
         <tr>
           <th>
-            <input
-              type="checkbox"
-              :checked="isAllSelected"
-              @change="toggleSelectAll"
-            >
+            <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll">
           </th>
           <th>ID</th>
           <th>Judul</th>
           <th>Unit</th>
+          <th>Tanggal Buka</th>
+          <th>Tanggal Tutup</th>
           <th>Status</th>
+          <th>Deskripsi</th>
           <th>Aksi</th>
         </tr>
       </thead>
@@ -517,16 +599,15 @@ function toggleSelectAll() {
       <tbody>
         <tr v-for="lowongan in lowonganList" :key="lowongan.id">
           <td>
-            <input
-              v-model="selectedIds"
-              type="checkbox"
-              :value="lowongan.id"
-            >
+            <input v-model="selectedIds" type="checkbox" :value="lowongan.id">
           </td>
           <td>{{ lowongan.id }}</td>
           <td>{{ lowongan.judul }}</td>
           <td>{{ lowongan.unit }}</td>
+          <td>{{ formatDate(lowongan.tanggalBuka) }}</td>
+          <td>{{ formatDate(lowongan.tanggalTutup) }}</td>
           <td>{{ lowongan.status }}</td>
+          <td>{{ lowongan.deskripsi || '-' }}</td>
           <td>
             <button type="button" @click="editLowongan(lowongan)">
               Edit
@@ -574,7 +655,10 @@ function toggleSelectAll() {
       <p>ID: {{ selectedLowongan.id }}</p>
       <p>Judul: {{ selectedLowongan.judul }}</p>
       <p>Unit: {{ selectedLowongan.unit }}</p>
+      <p>Tanggal Buka: {{ formatDate(selectedLowongan.tanggalBuka) }}</p>
+      <p>Tanggal Tutup: {{ formatDate(selectedLowongan.tanggalTutup) }}</p>
       <p>Status: {{ selectedLowongan.status }}</p>
+      <p>Deskripsi: {{ selectedLowongan.deskripsi || '-' }}</p>
 
       <button type="button" @click="selectedLowongan = null">
         Tutup Detail

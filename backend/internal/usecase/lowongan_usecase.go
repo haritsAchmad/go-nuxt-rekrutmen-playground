@@ -2,6 +2,8 @@ package usecase
 
 import (
 	"errors"
+	"strings"
+	"time"
 
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
 )
@@ -27,6 +29,28 @@ func NewLowonganUsecase(repo LowonganRepository) *LowonganUsecase {
 	}
 }
 
+func parseOptionalDate(value string, fieldName string) (*time.Time, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil, nil
+	}
+
+	parsedDate, err := time.Parse("2006-01-02", value)
+	if err != nil {
+		return nil, errors.New(fieldName + " harus berformat YYYY-MM-DD")
+	}
+
+	return &parsedDate, nil
+}
+
+func validateLowonganDates(tanggalBuka *time.Time, tanggalTutup *time.Time) error {
+	if tanggalBuka != nil && tanggalTutup != nil && tanggalBuka.After(*tanggalTutup) {
+		return errors.New("tanggal buka tidak boleh melewati tanggal tutup")
+	}
+
+	return nil
+}
+
 func (u *LowonganUsecase) GetLowonganList(filter domain.LowonganFilterRequest) (domain.LowonganListResponse, error) {
 	if filter.Status != "" && filter.Status != "aktif" && filter.Status != "nonaktif" {
 		return domain.LowonganListResponse{}, errors.New("status filter harus aktif atau nonaktif")
@@ -48,10 +72,27 @@ func (u *LowonganUsecase) CreateLowongan(request domain.CreateLowonganRequest) (
 		return domain.Lowongan{}, errors.New("judul dan unit wajib diisi")
 	}
 
+	tanggalBuka, err := parseOptionalDate(request.TanggalBuka, "tanggal buka")
+	if err != nil {
+		return domain.Lowongan{}, err
+	}
+
+	tanggalTutup, err := parseOptionalDate(request.TanggalTutup, "tanggal tutup")
+	if err != nil {
+		return domain.Lowongan{}, err
+	}
+
+	if err := validateLowonganDates(tanggalBuka, tanggalTutup); err != nil {
+		return domain.Lowongan{}, err
+	}
+
 	lowongan := domain.Lowongan{
-		Judul:  request.Judul,
-		Unit:   request.Unit,
-		Status: "aktif",
+		Judul:        strings.TrimSpace(request.Judul),
+		Unit:         strings.TrimSpace(request.Unit),
+		TanggalBuka:  tanggalBuka,
+		TanggalTutup: tanggalTutup,
+		Deskripsi:    strings.TrimSpace(request.Deskripsi),
+		Status:       "aktif",
 	}
 
 	return u.repo.CreateLowongan(lowongan)
@@ -78,10 +119,27 @@ func (u *LowonganUsecase) UpdateLowongan(id int, request domain.UpdateLowonganRe
 		return domain.Lowongan{}, errors.New("status harus aktif atau nonaktif")
 	}
 
+	tanggalBuka, err := parseOptionalDate(request.TanggalBuka, "tanggal buka")
+	if err != nil {
+		return domain.Lowongan{}, err
+	}
+
+	tanggalTutup, err := parseOptionalDate(request.TanggalTutup, "tanggal tutup")
+	if err != nil {
+		return domain.Lowongan{}, err
+	}
+
+	if err := validateLowonganDates(tanggalBuka, tanggalTutup); err != nil {
+		return domain.Lowongan{}, err
+	}
+
 	lowongan := domain.Lowongan{
-		Judul:  request.Judul,
-		Unit:   request.Unit,
-		Status: request.Status,
+		Judul:        strings.TrimSpace(request.Judul),
+		Unit:         strings.TrimSpace(request.Unit),
+		TanggalBuka:  tanggalBuka,
+		TanggalTutup: tanggalTutup,
+		Deskripsi:    strings.TrimSpace(request.Deskripsi),
+		Status:       request.Status,
 	}
 
 	return u.repo.UpdateLowongan(id, lowongan)
