@@ -1,10 +1,15 @@
 package domain
 
+import "time"
+
 type Lowongan struct {
-	ID     int    `json:"id"`
-	Judul  string `json:"judul"`
-	Unit   string `json:"unit"`
-	Status string `json:"status"`
+	ID           int
+	Judul        string
+	Unit         string
+	TanggalBuka  time.Time
+	TanggalTutup time.Time
+	Deskripsi    string
+	Status       string
 }
 
 type CreateLowonganRequest struct {
