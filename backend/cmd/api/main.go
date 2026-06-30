@@ -28,7 +28,11 @@ func main() {
 	lowonganUsecase := usecase.NewLowonganUsecase(lowonganRepo)
 	lowonganHandler := handler.NewLowonganHandler(lowonganUsecase)
 
-	route.RegisterRoutes(lowonganHandler)
+	authRepo := postgres.NewAuthRepository(db)
+	authUsecase := usecase.NewAuthUsecase(authRepo, cfg.Auth.SecretKey)
+	authHandler := handler.NewAuthHandler(authUsecase)
+
+	route.RegisterRoutes(lowonganHandler, authHandler)
 
 	serverHandler := middleware.Recovery(
 		middleware.Logger(
