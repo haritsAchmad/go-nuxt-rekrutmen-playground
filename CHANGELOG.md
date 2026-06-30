@@ -1,7 +1,7 @@
 # Changelog
 
 This changelog is based on the Git history from 2026-06-18 through
-2026-06-29. No project changes were recorded from 2026-06-18 through
+2026-06-30. No project changes were recorded from 2026-06-18 through
 2026-06-22; development recorded in this repository started on 2026-06-23.
 
 ## 2026-06-23
@@ -89,7 +89,31 @@ This changelog is based on the Git history from 2026-06-18 through
 - Implement SQL `LIMIT` and `OFFSET` pagination with total-record counting.
 - Add a startup repository check that reads paginated dummy data from
   PostgreSQL.
+- Run Go module tidying, remove unused database dependencies, and normalize Go
+  source formatting.
 
 ### Frontend
 
 - No frontend changes were recorded.
+
+## 2026-06-30
+
+### Backend
+
+- Wire the Lowongan use case and handler through repository interfaces and
+  dependency injection.
+- Use the PostgreSQL Lowongan repository in the API.
+- Add reusable HTTP middleware for CORS, request logging, panic recovery, JWT
+  authentication, role checks, and method-based role rules.
+- Apply global middleware and protect Lowongan routes with authentication and
+  role authorization.
+- Add auth domain models, token validation, request context helpers, use case,
+  PostgreSQL repository, handler, routes, and configuration.
+- Add users table seed SQL and an `AUTH_SECRET` environment example.
+- Allow the `Authorization` header in CORS responses.
+- Add a backend devtool command for creating users.
+
+### Frontend
+
+- Add a cookie-based login flow to the Nuxt app.
+- Send the auth token from Nuxt API requests.
