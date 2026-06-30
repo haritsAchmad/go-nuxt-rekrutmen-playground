@@ -6,6 +6,7 @@ import (
 
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/database"
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/config"
+	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/handler"
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/repository/postgres"
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/route"
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/usecase"
@@ -23,9 +24,10 @@ func main() {
 	log.Println("✅ PostgreSQL Connected")
 
 	lowonganRepo := postgres.NewLowonganRepository(db)
-	usecase.SetLowonganRepository(lowonganRepo)
+	lowonganUsecase := usecase.NewLowonganUsecase(lowonganRepo)
+	lowonganHandler := handler.NewLowonganHandler(lowonganUsecase)
 
-	route.RegisterRoutes()
+	route.RegisterRoutes(lowonganHandler)
 
 	address := ":" + cfg.App.Port
 	log.Println("Server running on http://localhost" + address)
