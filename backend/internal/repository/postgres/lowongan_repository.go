@@ -2,9 +2,12 @@ package postgres
 
 import (
 	"context"
+	"errors"
 	"math"
+	"strings"
 
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -33,13 +36,21 @@ func (r *LowonganRepository) GetAllLowongan(filter domain.LowonganFilterRequest)
 	}
 
 	offset := (page - 1) * limit
+	keyword := strings.TrimSpace(filter.Keyword)
+	status := strings.TrimSpace(filter.Status)
+
+	whereQuery := `
+		WHERE ($1 = '' OR LOWER(judul) LIKE '%' || LOWER($1) || '%' OR LOWER(unit) LIKE '%' || LOWER($1) || '%')
+		AND ($2 = '' OR status = $2)
+	`
 
 	rows, err := r.db.Query(ctx, `
 		SELECT id, judul, unit, status
-		FROM rekrutmen_playground.lowongan
+		FROM lowongan
+	`+whereQuery+`
 		ORDER BY id
-		LIMIT $1 OFFSET $2
-	`, limit, offset)
+		LIMIT $3 OFFSET $4
+	`, keyword, status, limit, offset)
 	if err != nil {
 		return domain.LowonganListResponse{}, err
 	}
@@ -72,7 +83,7 @@ func (r *LowonganRepository) GetAllLowongan(filter domain.LowonganFilterRequest)
 	err = r.db.QueryRow(ctx, `
 		SELECT COUNT(*)
 		FROM lowongan
-	`).Scan(&total)
+	`+whereQuery, keyword, status).Scan(&total)
 	if err != nil {
 		return domain.LowonganListResponse{}, err
 	}
@@ -88,4 +99,156 @@ func (r *LowonganRepository) GetAllLowongan(filter domain.LowonganFilterRequest)
 			TotalPage: totalPage,
 		},
 	}, nil
+}
+
+func (r *LowonganRepository) GetLowonganByID(id int) (domain.Lowongan, error) {
+	ctx := context.Background()
+
+	var lowongan domain.Lowongan
+
+	err := r.db.QueryRow(ctx, `
+		SELECT id, judul, unit, status
+		FROM lowongan
+		WHERE id = $1
+	`, id).Scan(
+		&lowongan.ID,
+		&lowongan.Judul,
+		&lowongan.Unit,
+		&lowongan.Status,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Lowongan{}, errors.New("lowongan tidak ditemukan")
+	}
+	if err != nil {
+		return domain.Lowongan{}, err
+	}
+
+	return lowongan, nil
+}
+
+func (r *LowonganRepository) CreateLowongan(lowongan domain.Lowongan) (domain.Lowongan, error) {
+	ctx := context.Background()
+
+	err := r.db.QueryRow(ctx, `
+		INSERT INTO lowongan (judul, unit, status)
+		VALUES ($1, $2, $3)
+		RETURNING id, judul, unit, status
+	`, lowongan.Judul, lowongan.Unit, lowongan.Status).Scan(
+		&lowongan.ID,
+		&lowongan.Judul,
+		&lowongan.Unit,
+		&lowongan.Status,
+	)
+	if err != nil {
+		return domain.Lowongan{}, err
+	}
+
+	return lowongan, nil
+}
+
+func (r *LowonganRepository) DeleteLowongan(id int) error {
+	ctx := context.Background()
+
+	commandTag, err := r.db.Exec(ctx, `
+		DELETE FROM lowongan
+		WHERE id = $1
+	`, id)
+	if err != nil {
+		return err
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		return errors.New("lowongan tidak ditemukan")
+	}
+
+	return nil
+}
+
+func (r *LowonganRepository) UpdateLowonganStatus(id int, status string) (domain.Lowongan, error) {
+	ctx := context.Background()
+
+	var lowongan domain.Lowongan
+
+	err := r.db.QueryRow(ctx, `
+		UPDATE lowongan
+		SET status = $1
+		WHERE id = $2
+		RETURNING id, judul, unit, status
+	`, status, id).Scan(
+		&lowongan.ID,
+		&lowongan.Judul,
+		&lowongan.Unit,
+		&lowongan.Status,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Lowongan{}, errors.New("lowongan tidak ditemukan")
+	}
+	if err != nil {
+		return domain.Lowongan{}, err
+	}
+
+	return lowongan, nil
+}
+
+func (r *LowonganRepository) UpdateLowongan(id int, updatedLowongan domain.Lowongan) (domain.Lowongan, error) {
+	ctx := context.Background()
+
+	var lowongan domain.Lowongan
+
+	err := r.db.QueryRow(ctx, `
+		UPDATE lowongan
+		SET judul = $1, unit = $2, status = $3
+		WHERE id = $4
+		RETURNING id, judul, unit, status
+	`, updatedLowongan.Judul, updatedLowongan.Unit, updatedLowongan.Status, id).Scan(
+		&lowongan.ID,
+		&lowongan.Judul,
+		&lowongan.Unit,
+		&lowongan.Status,
+	)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return domain.Lowongan{}, errors.New("lowongan tidak ditemukan")
+	}
+	if err != nil {
+		return domain.Lowongan{}, err
+	}
+
+	return lowongan, nil
+}
+
+func (r *LowonganRepository) BulkUpdateLowonganStatus(ids []int, status string) error {
+	ctx := context.Background()
+
+	commandTag, err := r.db.Exec(ctx, `
+		UPDATE lowongan
+		SET status = $1
+		WHERE id = ANY($2)
+	`, status, ids)
+	if err != nil {
+		return err
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		return errors.New("lowongan tidak ditemukan")
+	}
+
+	return nil
+}
+
+func (r *LowonganRepository) BulkDeleteLowongan(ids []int) error {
+	ctx := context.Background()
+
+	commandTag, err := r.db.Exec(ctx, `
+		DELETE FROM lowongan
+		WHERE id = ANY($1)
+	`, ids)
+	if err != nil {
+		return err
+	}
+
+	if commandTag.RowsAffected() == 0 {
+		return errors.New("lowongan tidak ditemukan")
+	}
+
+	return nil
 }
