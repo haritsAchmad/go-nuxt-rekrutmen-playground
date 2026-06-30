@@ -1,23 +1,33 @@
 <script setup>
+const authToken = useCookie('auth_token', {
+  maxAge: 60 * 60 * 24
+})
+
+const authUser = useCookie('auth_user', {
+  maxAge: 60 * 60 * 24
+})
+
+const loginForm = reactive({
+  email: 'admin@example.com',
+  password: 'admin123'
+})
+
+const loginLoading = ref(false)
+const loginError = ref('')
+
+const isLoggedIn = computed(() => Boolean(authToken.value))
+const currentUser = computed(() => authUser.value || null)
+
 const form = reactive({
   judul: '',
   unit: '',
   status: 'aktif',
-jumlah: ''
+  jumlah: ''
 })
 
 const filter = reactive({
   keyword: '',
   status: ''
-})
-
-const paginationMeta = computed(() => {
-  return data.value?.data?.meta || {
-    page: 1,
-    limit: 10,
-    total: 0,
-    total_page: 1
-  }
 })
 
 const editId = ref(null)
@@ -30,11 +40,6 @@ const bulkError = ref('')
 
 const page = ref(1)
 const limit = ref(10)
-
-const isAllSelected = computed(() => {
-  return lowonganList.value.length > 0 &&
-    selectedIds.value.length === lowonganList.value.length
-})
 
 const apiUrl = computed(() => {
   const params = new URLSearchParams()
@@ -51,6 +56,29 @@ const apiUrl = computed(() => {
   params.append('limit', limit.value)
 
   return `http://localhost:8080/api/lowongan?${params.toString()}`
+})
+
+const { data, pending, error, refresh } = await useFetch(apiUrl, {
+  immediate: false,
+  server: false
+})
+
+const paginationMeta = computed(() => {
+  return data.value?.data?.meta || {
+    page: 1,
+    limit: 10,
+    total: 0,
+    total_page: 1
+  }
+})
+
+const lowonganList = computed(() => {
+  return data.value?.data?.data || []
+})
+
+const isAllSelected = computed(() => {
+  return lowonganList.value.length > 0 &&
+    selectedIds.value.length === lowonganList.value.length
 })
 
 const showingFrom = computed(() => {
@@ -71,7 +99,44 @@ const showingTo = computed(() => {
   return end
 })
 
-const { data, pending, error, refresh } = await useFetch(apiUrl)
+onMounted(async () => {
+  if (isLoggedIn.value) {
+    await refresh()
+  }
+})
+
+async function login() {
+  loginLoading.value = true
+  loginError.value = ''
+
+  try {
+    const result = await $fetch('http://localhost:8080/api/auth/login', {
+      method: 'POST',
+      body: {
+        email: loginForm.email,
+        password: loginForm.password
+      }
+    })
+
+    authToken.value = result.data.token
+    authUser.value = result.data.user
+
+    await refresh()
+  } catch (error) {
+    loginError.value = 'Login gagal. Cek email dan password.'
+  } finally {
+    loginLoading.value = false
+  }
+}
+
+function logout() {
+  authToken.value = null
+  authUser.value = null
+  selectedIds.value = []
+  selectedLowongan.value = null
+  bulkMessage.value = ''
+  bulkError.value = ''
+}
 
 async function resetFilter() {
   filter.keyword = ''
@@ -97,10 +162,6 @@ async function showDetail(id) {
   const result = await $fetch(`http://localhost:8080/api/lowongan/detail?id=${id}`)
   selectedLowongan.value = result.data
 }
-
-const lowonganList = computed(() => {
-  return data.value?.data?.data || []
-})
 
 async function submitLowongan() {
   if (editId.value) {
@@ -263,199 +324,259 @@ function toggleSelectAll() {
 </script>
 
 <template>
-  <main style="padding: 24px; font-family: Arial, sans-serif;">
-    <h1>Lowongan Rekrutmen</h1>
+  <main v-if="!isLoggedIn" style="min-height: 100vh; display: grid; place-items: center; font-family: Arial, sans-serif; background: #f5f5f5;">
+    <form
+      style="width: 360px; padding: 24px; border: 1px solid #ddd; border-radius: 8px; background: white;"
+      @submit.prevent="login"
+    >
+      <h1 style="margin-top: 0;">Login</h1>
+      <p style="color: #666;">Masuk ke Rekrutmen Playground</p>
+
+      <div style="margin-bottom: 12px;">
+        <label>Email</label>
+        <input
+          v-model="loginForm.email"
+          type="email"
+          required
+          style="width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box;"
+        >
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <label>Password</label>
+        <input
+          v-model="loginForm.password"
+          type="password"
+          required
+          style="width: 100%; padding: 8px; margin-top: 4px; box-sizing: border-box;"
+        >
+      </div>
+
+      <p v-if="loginError" style="color: red;">{{ loginError }}</p>
+
+      <button type="submit" :disabled="loginLoading" style="width: 100%; padding: 10px;">
+        {{ loginLoading ? 'Memproses...' : 'Login' }}
+      </button>
+
+      <p style="font-size: 12px; color: #777; margin-bottom: 0;">
+        Demo: admin@example.com / admin123
+      </p>
+    </form>
+  </main>
+
+  <main v-else style="padding: 24px; font-family: Arial, sans-serif;">
+    <header style="display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 24px;">
+      <div>
+        <h1 style="margin-bottom: 4px;">Lowongan Rekrutmen</h1>
+        <p style="margin-top: 0; color: #666;">
+          Login sebagai {{ currentUser?.name || 'User' }} ({{ currentUser?.role || '-' }})
+        </p>
+      </div>
+
+      <button type="button" @click="logout">
+        Logout
+      </button>
+    </header>
 
     <form @submit.prevent="submitLowongan" style="margin-bottom: 24px;">
       <BaseInput
-  v-model="form.judul"
-  label="Judul Lowongan"
-  required
-  maxlength="100"
-/>
+        v-model="form.judul"
+        label="Judul Lowongan"
+        required
+        maxlength="100"
+      />
 
       <BaseInput
-    label="Unit"
-    placeholder="Contoh: Direktorat SDM"
-    v-model="form.unit"
-/>
+        v-model="form.unit"
+        label="Unit"
+        placeholder="Contoh: Direktorat SDM"
+      />
 
-<BaseInput
-  v-model="form.jumlah"
-  label="Jumlah Dibutuhkan"
-  type="number"
-  :min="1"
-  :max="100"
-  placeholder="Contoh: 3"
-  number-only
-/>
+      <BaseInput
+        v-model="form.jumlah"
+        label="Jumlah Dibutuhkan"
+        type="number"
+        :min="1"
+        :max="100"
+        placeholder="Contoh: 3"
+        number-only
+      />
 
-      	<BaseButton
-  type="submit"
-  :label="editId ? 'Simpan Perubahan' : 'Tambah Lowongan'"
-  :color="editId ? 'blue' : 'green'"
-/>
+      <BaseButton
+        type="submit"
+        :label="editId ? 'Simpan Perubahan' : 'Tambah Lowongan'"
+        :color="editId ? 'blue' : 'green'"
+      />
 
-	<button v-if="editId" type="button" @click="resetForm">
-  	Batal Edit
-	</button>
+      <button v-if="editId" type="button" @click="resetForm">
+        Batal Edit
+      </button>
     </form>
 
     <div style="margin-bottom: 16px;">
-  <h3>Filter Lowongan</h3>
+      <h3>Filter Lowongan</h3>
 
-  <input
-    v-model="filter.keyword"
-    type="text"
-    placeholder="Cari judul/unit"
-  >
+      <input
+        v-model="filter.keyword"
+        type="text"
+        placeholder="Cari judul/unit"
+      >
 
-  <select v-model="filter.status">
-    <option value="">Semua Status</option>
-    <option value="aktif">Aktif</option>
-    <option value="nonaktif">Nonaktif</option>
-  </select>
+      <select v-model="filter.status">
+        <option value="">Semua Status</option>
+        <option value="aktif">Aktif</option>
+        <option value="nonaktif">Nonaktif</option>
+      </select>
 
-  <button type="button" @click="applyFilter">
-  Cari
-</button>
+      <button type="button" @click="applyFilter">
+        Cari
+      </button>
 
-  <button type="button" @click="resetFilter">
-    Reset
-  </button>
-</div>
+      <button type="button" @click="resetFilter">
+        Reset
+      </button>
+    </div>
 
-<div style="margin-bottom: 16px;">
-  <h3>Bulk Action</h3>
+    <div style="margin-bottom: 16px;">
+      <h3>Bulk Action</h3>
 
-  <p>Terpilih: {{ selectedIds.length }} lowongan</p>
+      <p>Terpilih: {{ selectedIds.length }} lowongan</p>
 
-<p v-if="bulkMessage" style="color: green;">
-  {{ bulkMessage }}
-</p>
+      <p v-if="bulkMessage" style="color: green;">
+        {{ bulkMessage }}
+      </p>
 
-<p v-if="bulkError" style="color: red;">
-  {{ bulkError }}
-</p>
+      <p v-if="bulkError" style="color: red;">
+        {{ bulkError }}
+      </p>
 
-<p v-if="bulkLoading">
-  Memproses bulk action...
-</p>
+      <p v-if="bulkLoading">
+        Memproses bulk action...
+      </p>
 
-  <button
-  type="button"
-  :disabled="selectedIds.length === 0 || bulkLoading"
-  @click="bulkUpdateStatus('aktif')"
->
-  Aktifkan Terpilih
-</button>
+      <button
+        type="button"
+        :disabled="selectedIds.length === 0 || bulkLoading"
+        @click="bulkUpdateStatus('aktif')"
+      >
+        Aktifkan Terpilih
+      </button>
 
-<button
-  type="button"
-  :disabled="selectedIds.length === 0 || bulkLoading"
-  @click="bulkUpdateStatus('nonaktif')"
->
-  Nonaktifkan Terpilih
-</button>
+      <button
+        type="button"
+        :disabled="selectedIds.length === 0 || bulkLoading"
+        @click="bulkUpdateStatus('nonaktif')"
+      >
+        Nonaktifkan Terpilih
+      </button>
 
-<button
-  type="button"
-  :disabled="selectedIds.length === 0 || bulkLoading"
-  @click="bulkDelete"
->
-  Hapus Terpilih
-</button>
+      <button
+        type="button"
+        :disabled="selectedIds.length === 0 || bulkLoading"
+        @click="bulkDelete"
+      >
+        Hapus Terpilih
+      </button>
 
-    <select
-      v-model="limit"
-      :disabled="pending"
-      style="margin-left: 12px;"
-      @change="changeLimit"
-    >
-      <option :value="5">5 / page</option>
-      <option :value="10">10 / page</option>
-      <option :value="25">25 / page</option>
-      <option :value="50">50 / page</option>
-    </select>
-</div>
+      <select
+        v-model="limit"
+        :disabled="pending"
+        style="margin-left: 12px;"
+        @change="changeLimit"
+      >
+        <option :value="5">5 / page</option>
+        <option :value="10">10 / page</option>
+        <option :value="25">25 / page</option>
+        <option :value="50">50 / page</option>
+      </select>
+    </div>
 
+    <p v-if="pending">Loading...</p>
+    <p v-else-if="error">Gagal ambil data lowongan</p>
 
-<p v-if="pending">Loading...</p>
-<p v-else-if="error">Gagal ambil data lowongan</p>
+    <table v-if="!pending && !error" border="1" cellpadding="8" cellspacing="0">
+      <thead>
+        <tr>
+          <th>
+            <input
+              type="checkbox"
+              :checked="isAllSelected"
+              @change="toggleSelectAll"
+            >
+          </th>
+          <th>ID</th>
+          <th>Judul</th>
+          <th>Unit</th>
+          <th>Status</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
 
-<table v-if="!pending && !error" border="1" cellpadding="8" cellspacing="0">
+      <tbody>
+        <tr v-for="lowongan in lowonganList" :key="lowongan.id">
+          <td>
+            <input
+              v-model="selectedIds"
+              type="checkbox"
+              :value="lowongan.id"
+            >
+          </td>
+          <td>{{ lowongan.id }}</td>
+          <td>{{ lowongan.judul }}</td>
+          <td>{{ lowongan.unit }}</td>
+          <td>{{ lowongan.status }}</td>
+          <td>
+            <button type="button" @click="editLowongan(lowongan)">
+              Edit
+            </button>
 
-  <thead>
-    <tr>
-      <th>
-        <input
-          type="checkbox"
-          :checked="isAllSelected"
-          @change="toggleSelectAll"
-        >
-      </th>
-      <th>ID</th>
-      <th>Judul</th>
-      <th>Unit</th>
-      <th>Status</th>
-      <th>Aksi</th>
-    </tr>
-  </thead>
+            <button type="button" @click="showDetail(lowongan.id)">
+              Detail
+            </button>
 
-  <tbody>
-    <tr v-for="lowongan in lowonganList" :key="lowongan.id">
-<td>
-  <input
-    v-model="selectedIds"
-    type="checkbox"
-    :value="lowongan.id"
-  >
-</td>
-      <td>{{ lowongan.id }}</td>
-      <td>{{ lowongan.judul }}</td>
-      <td>{{ lowongan.unit }}</td>
-      <td>{{ lowongan.status }}</td>
-      <td>
-        <button type="button" @click="editLowongan(lowongan)">
-          Edit
-        </button>
+            <button type="button" @click="toggleStatus(lowongan)">
+              {{ lowongan.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan' }}
+            </button>
 
-	<button type="button" @click="showDetail(lowongan.id)">
-  	  Detail
-	</button>
+            <button type="button" @click="deleteLowongan(lowongan.id)">
+              Hapus
+            </button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
 
-        <button type="button" @click="toggleStatus(lowongan)">
-          {{ lowongan.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan' }}
-        </button>
+    <div style="margin-top: 16px;">
+      <div style="margin-bottom: 8px;">
+        <span>
+          Menampilkan {{ showingFrom }} - {{ showingTo }}
+          dari {{ paginationMeta.total }} data
+        </span>
+      </div>
+    </div>
 
-        <button type="button" @click="deleteLowongan(lowongan.id)">
-          Hapus
-        </button>
-      </td>
-    </tr>
-  </tbody>
-</table>
+    <div style="margin-top: 12px;">
+      <button type="button" :disabled="page <= 1 || pending" @click="previousPage">
+        Sebelumnya
+      </button>
+      <span style="margin: 0 8px;">
+        Halaman {{ paginationMeta.page }} / {{ paginationMeta.total_page }}
+      </span>
+      <button type="button" :disabled="page >= paginationMeta.total_page || pending" @click="nextPage">
+        Berikutnya
+      </button>
+    </div>
 
-<div style="margin-top: 16px;">
-  <div style="margin-bottom: 8px;">
-    <span>
-      Menampilkan {{ showingFrom }} - {{ showingTo }}
-      dari {{ paginationMeta.total }} data
-    </span>
-  </div>
-</div>
+    <div v-if="selectedLowongan" style="margin-top: 16px;">
+      <h3>Detail Lowongan</h3>
+      <p>ID: {{ selectedLowongan.id }}</p>
+      <p>Judul: {{ selectedLowongan.judul }}</p>
+      <p>Unit: {{ selectedLowongan.unit }}</p>
+      <p>Status: {{ selectedLowongan.status }}</p>
 
-<div v-if="selectedLowongan" style="margin-top: 16px;">
-  <h3>Detail Lowongan</h3>
-  <p>ID: {{ selectedLowongan.id }}</p>
-  <p>Judul: {{ selectedLowongan.judul }}</p>
-  <p>Unit: {{ selectedLowongan.unit }}</p>
-  <p>Status: {{ selectedLowongan.status }}</p>
-
-  <button type="button" @click="selectedLowongan = null">
-    Tutup Detail
-  </button>
-</div>
-
+      <button type="button" @click="selectedLowongan = null">
+        Tutup Detail
+      </button>
+    </div>
   </main>
 </template>
