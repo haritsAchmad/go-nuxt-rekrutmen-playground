@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
-	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/repository"
 )
 
 type LowonganRepository interface {
@@ -18,33 +17,33 @@ type LowonganRepository interface {
 	BulkDeleteLowongan(ids []int) error
 }
 
-var lowonganRepository LowonganRepository = repository.NewLowonganMemoryRepository()
-
-func SetLowonganRepository(repo LowonganRepository) {
-	if repo == nil {
-		return
-	}
-
-	lowonganRepository = repo
+type LowonganUsecase struct {
+	repo LowonganRepository
 }
 
-func GetLowonganList(filter domain.LowonganFilterRequest) (domain.LowonganListResponse, error) {
+func NewLowonganUsecase(repo LowonganRepository) *LowonganUsecase {
+	return &LowonganUsecase{
+		repo: repo,
+	}
+}
+
+func (u *LowonganUsecase) GetLowonganList(filter domain.LowonganFilterRequest) (domain.LowonganListResponse, error) {
 	if filter.Status != "" && filter.Status != "aktif" && filter.Status != "nonaktif" {
 		return domain.LowonganListResponse{}, errors.New("status filter harus aktif atau nonaktif")
 	}
 
-	return lowonganRepository.GetAllLowongan(filter)
+	return u.repo.GetAllLowongan(filter)
 }
 
-func GetLowonganDetail(id int) (domain.Lowongan, error) {
+func (u *LowonganUsecase) GetLowonganDetail(id int) (domain.Lowongan, error) {
 	if id <= 0 {
 		return domain.Lowongan{}, errors.New("ID lowongan tidak valid")
 	}
 
-	return lowonganRepository.GetLowonganByID(id)
+	return u.repo.GetLowonganByID(id)
 }
 
-func CreateLowongan(request domain.CreateLowonganRequest) (domain.Lowongan, error) {
+func (u *LowonganUsecase) CreateLowongan(request domain.CreateLowonganRequest) (domain.Lowongan, error) {
 	if request.Judul == "" || request.Unit == "" {
 		return domain.Lowongan{}, errors.New("judul dan unit wajib diisi")
 	}
@@ -55,22 +54,22 @@ func CreateLowongan(request domain.CreateLowonganRequest) (domain.Lowongan, erro
 		Status: "aktif",
 	}
 
-	return lowonganRepository.CreateLowongan(lowongan)
+	return u.repo.CreateLowongan(lowongan)
 }
 
-func DeleteLowongan(id int) error {
-	return lowonganRepository.DeleteLowongan(id)
+func (u *LowonganUsecase) DeleteLowongan(id int) error {
+	return u.repo.DeleteLowongan(id)
 }
 
-func UpdateLowonganStatus(id int, request domain.UpdateLowonganStatusRequest) (domain.Lowongan, error) {
+func (u *LowonganUsecase) UpdateLowonganStatus(id int, request domain.UpdateLowonganStatusRequest) (domain.Lowongan, error) {
 	if request.Status != "aktif" && request.Status != "nonaktif" {
 		return domain.Lowongan{}, errors.New("status harus aktif atau nonaktif")
 	}
 
-	return lowonganRepository.UpdateLowonganStatus(id, request.Status)
+	return u.repo.UpdateLowonganStatus(id, request.Status)
 }
 
-func UpdateLowongan(id int, request domain.UpdateLowonganRequest) (domain.Lowongan, error) {
+func (u *LowonganUsecase) UpdateLowongan(id int, request domain.UpdateLowonganRequest) (domain.Lowongan, error) {
 	if request.Judul == "" || request.Unit == "" {
 		return domain.Lowongan{}, errors.New("judul dan unit wajib diisi")
 	}
@@ -85,10 +84,10 @@ func UpdateLowongan(id int, request domain.UpdateLowonganRequest) (domain.Lowong
 		Status: request.Status,
 	}
 
-	return lowonganRepository.UpdateLowongan(id, lowongan)
+	return u.repo.UpdateLowongan(id, lowongan)
 }
 
-func BulkUpdateLowonganStatus(request domain.BulkUpdateStatusRequest) error {
+func (u *LowonganUsecase) BulkUpdateLowonganStatus(request domain.BulkUpdateStatusRequest) error {
 	if len(request.IDs) == 0 {
 		return errors.New("minimal pilih satu lowongan")
 	}
@@ -97,13 +96,13 @@ func BulkUpdateLowonganStatus(request domain.BulkUpdateStatusRequest) error {
 		return errors.New("status harus aktif atau nonaktif")
 	}
 
-	return lowonganRepository.BulkUpdateLowonganStatus(request.IDs, request.Status)
+	return u.repo.BulkUpdateLowonganStatus(request.IDs, request.Status)
 }
 
-func BulkDeleteLowongan(request domain.BulkDeleteRequest) error {
+func (u *LowonganUsecase) BulkDeleteLowongan(request domain.BulkDeleteRequest) error {
 	if len(request.IDs) == 0 {
 		return errors.New("minimal pilih satu lowongan")
 	}
 
-	return lowonganRepository.BulkDeleteLowongan(request.IDs)
+	return u.repo.BulkDeleteLowongan(request.IDs)
 }
