@@ -9,6 +9,12 @@ import (
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
 )
 
+type LowonganMemoryRepository struct{}
+
+func NewLowonganMemoryRepository() *LowonganMemoryRepository {
+	return &LowonganMemoryRepository{}
+}
+
 var lowonganData = generateDummyLowongan(1000)
 
 func generateDummyLowongan(total int) []domain.Lowongan {
@@ -52,6 +58,10 @@ func generateDummyLowongan(total int) []domain.Lowongan {
 	}
 
 	return result
+}
+
+func (r *LowonganMemoryRepository) GetAllLowongan(filter domain.LowonganFilterRequest) (domain.LowonganListResponse, error) {
+	return GetAllLowongan(filter), nil
 }
 
 func GetAllLowongan(filter domain.LowonganFilterRequest) domain.LowonganListResponse {
@@ -117,6 +127,10 @@ func GetAllLowongan(filter domain.LowonganFilterRequest) domain.LowonganListResp
 	}
 }
 
+func (r *LowonganMemoryRepository) GetLowonganByID(id int) (domain.Lowongan, error) {
+	return GetLowonganByID(id)
+}
+
 func GetLowonganByID(id int) (domain.Lowongan, error) {
 	for _, lowongan := range lowonganData {
 		if lowongan.ID == id {
@@ -125,6 +139,10 @@ func GetLowonganByID(id int) (domain.Lowongan, error) {
 	}
 
 	return domain.Lowongan{}, errors.New("lowongan tidak ditemukan")
+}
+
+func (r *LowonganMemoryRepository) CreateLowongan(lowongan domain.Lowongan) (domain.Lowongan, error) {
+	return CreateLowongan(lowongan), nil
 }
 
 func CreateLowongan(lowongan domain.Lowongan) domain.Lowongan {
@@ -142,6 +160,10 @@ func CreateLowongan(lowongan domain.Lowongan) domain.Lowongan {
 	return lowongan
 }
 
+func (r *LowonganMemoryRepository) DeleteLowongan(id int) error {
+	return DeleteLowongan(id)
+}
+
 func DeleteLowongan(id int) error {
 	for index, lowongan := range lowonganData {
 		if lowongan.ID == id {
@@ -153,6 +175,10 @@ func DeleteLowongan(id int) error {
 	return errors.New("lowongan tidak ditemukan")
 }
 
+func (r *LowonganMemoryRepository) UpdateLowonganStatus(id int, status string) (domain.Lowongan, error) {
+	return UpdateLowonganStatus(id, status)
+}
+
 func UpdateLowonganStatus(id int, status string) (domain.Lowongan, error) {
 	for index, lowongan := range lowonganData {
 		if lowongan.ID == id {
@@ -162,6 +188,10 @@ func UpdateLowonganStatus(id int, status string) (domain.Lowongan, error) {
 	}
 
 	return domain.Lowongan{}, errors.New("lowongan tidak ditemukan")
+}
+
+func (r *LowonganMemoryRepository) UpdateLowongan(id int, updatedLowongan domain.Lowongan) (domain.Lowongan, error) {
+	return UpdateLowongan(id, updatedLowongan)
 }
 
 func UpdateLowongan(id int, updatedLowongan domain.Lowongan) (domain.Lowongan, error) {
@@ -188,6 +218,10 @@ func containsID(ids []int, id int) bool {
 	return false
 }
 
+func (r *LowonganMemoryRepository) BulkUpdateLowonganStatus(ids []int, status string) error {
+	return BulkUpdateLowonganStatus(ids, status)
+}
+
 func BulkUpdateLowonganStatus(ids []int, status string) error {
 	found := false
 
@@ -203,6 +237,10 @@ func BulkUpdateLowonganStatus(ids []int, status string) error {
 	}
 
 	return nil
+}
+
+func (r *LowonganMemoryRepository) BulkDeleteLowongan(ids []int) error {
+	return BulkDeleteLowongan(ids)
 }
 
 func BulkDeleteLowongan(ids []int) error {
