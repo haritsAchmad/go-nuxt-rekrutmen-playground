@@ -7,13 +7,13 @@ import (
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/handler"
 )
 
-func RegisterRoutes() {
+func RegisterRoutes(lowonganHandler *handler.LowonganHandler) {
 	http.HandleFunc("/health", withCors(healthHandler))
-	http.HandleFunc("/api/lowongan", withCors(handler.LowonganHandler))
-	http.HandleFunc("/api/lowongan/detail", withCors(handler.LowonganDetailHandler))
-	http.HandleFunc("/api/lowongan/status", withCors(handler.LowonganStatusHandler))
-	http.HandleFunc("/api/lowongan/bulk-status", withCors(handler.LowonganBulkStatusHandler))
-	http.HandleFunc("/api/lowongan/bulk-delete", withCors(handler.LowonganBulkDeleteHandler))
+	http.HandleFunc("/api/lowongan", withCors(lowonganHandler.LowonganHandler))
+	http.HandleFunc("/api/lowongan/detail", withCors(lowonganHandler.LowonganDetailHandler))
+	http.HandleFunc("/api/lowongan/status", withCors(lowonganHandler.LowonganStatusHandler))
+	http.HandleFunc("/api/lowongan/bulk-status", withCors(lowonganHandler.LowonganBulkStatusHandler))
+	http.HandleFunc("/api/lowongan/bulk-delete", withCors(lowonganHandler.LowonganBulkDeleteHandler))
 }
 
 func withCors(next http.HandlerFunc) http.HandlerFunc {
