@@ -1,31 +1,18 @@
 <script setup>
-const authToken = useCookie('auth_token', {
-  maxAge: 60 * 60 * 24
-})
+const authStore = useAuthStore()
 
-const authUser = useCookie('auth_user', {
-  maxAge: 60 * 60 * 24
-})
+const isReady = ref(false)
 
 const loginForm = reactive({
   email: 'admin@example.com',
   password: 'admin123'
 })
 
-const loginLoading = ref(false)
-const loginError = ref('')
-
-const isLoggedIn = computed(() => Boolean(authToken.value))
-const currentUser = computed(() => authUser.value || null)
-const authHeaders = computed(() => {
-  if (!authToken.value) {
-    return {}
-  }
-
-  return {
-    Authorization: `Bearer ${authToken.value}`
-  }
-})
+const isLoggedIn = computed(() => authStore.isLoggedIn)
+const currentUser = computed(() => authStore.user)
+const loginLoading = computed(() => authStore.loading)
+const loginError = computed(() => authStore.error)
+const authHeaders = computed(() => authStore.authHeaders)
 
 const form = reactive({
   judul: '',
@@ -70,6 +57,7 @@ const apiUrl = computed(() => {
 const { data, pending, error, refresh } = await useFetch(apiUrl, {
   immediate: false,
   server: false,
+  watch: false,
   headers: authHeaders
 })
 
@@ -110,24 +98,31 @@ const showingTo = computed(() => {
 })
 
 onMounted(async () => {
-  if (isLoggedIn.value) {
+  authStore.restoreSession()
+  isReady.value = true
+
+  if (authStore.isLoggedIn) {
     await refresh()
   }
 })
 
-function logout() {
-  authToken.value = null
-  authUser.value = null
+function clearPageState() {
   selectedIds.value = []
   selectedLowongan.value = null
   bulkMessage.value = ''
   bulkError.value = ''
 }
 
+function logout() {
+  authStore.logout()
+  clearPageState()
+  data.value = null
+}
+
 function handleUnauthorized(error) {
-  if (error?.statusCode === 401 || error?.response?.status === 401) {
-    logout()
-    loginError.value = 'Sesi login habis. Silakan login ulang.'
+  if (authStore.handleUnauthorized(error)) {
+    clearPageState()
+    data.value = null
     return true
   }
 
@@ -135,26 +130,11 @@ function handleUnauthorized(error) {
 }
 
 async function login() {
-  loginLoading.value = true
-  loginError.value = ''
-
   try {
-    const result = await $fetch('http://localhost:8080/api/auth/login', {
-      method: 'POST',
-      body: {
-        email: loginForm.email,
-        password: loginForm.password
-      }
-    })
-
-    authToken.value = result.data.token
-    authUser.value = result.data.user
-
+    await authStore.login(loginForm.email, loginForm.password)
     await refresh()
   } catch (error) {
-    loginError.value = 'Login gagal. Cek email dan password.'
-  } finally {
-    loginLoading.value = false
+    // error message sudah disimpan di authStore
   }
 }
 
@@ -372,7 +352,11 @@ function toggleSelectAll() {
 </script>
 
 <template>
-  <main v-if="!isLoggedIn" style="min-height: 100vh; display: grid; place-items: center; font-family: Arial, sans-serif; background: #f5f5f5;">
+  <main v-if="!isReady" style="min-height: 100vh; display: grid; place-items: center; font-family: Arial, sans-serif; background: #f5f5f5;">
+    <p>Loading aplikasi...</p>
+  </main>
+
+  <main v-else-if="!isLoggedIn" style="min-height: 100vh; display: grid; place-items: center; font-family: Arial, sans-serif; background: #f5f5f5;">
     <form
       style="width: 360px; padding: 24px; border: 1px solid #ddd; border-radius: 8px; background: white;"
       @submit.prevent="login"
