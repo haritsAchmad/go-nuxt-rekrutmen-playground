@@ -11,6 +11,16 @@ import (
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/usecase"
 )
 
+type LowonganHandler struct {
+	usecase *usecase.LowonganUsecase
+}
+
+func NewLowonganHandler(usecase *usecase.LowonganUsecase) *LowonganHandler {
+	return &LowonganHandler{
+		usecase: usecase,
+	}
+}
+
 type apiResponse struct {
 	Success bool   `json:"success"`
 	Message string `json:"message,omitempty"`
@@ -49,22 +59,22 @@ func getIDFromQuery(r *http.Request) (int, error) {
 	return id, nil
 }
 
-func LowonganHandler(w http.ResponseWriter, r *http.Request) {
+func (h *LowonganHandler) LowonganHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		GetLowongan(w, r)
+		h.GetLowongan(w, r)
 	case http.MethodPost:
-		CreateLowongan(w, r)
+		h.CreateLowongan(w, r)
 	case http.MethodPut:
-		UpdateLowongan(w, r)
+		h.UpdateLowongan(w, r)
 	case http.MethodDelete:
-		DeleteLowongan(w, r)
+		h.DeleteLowongan(w, r)
 	default:
 		errorResponse(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
 	}
 }
 
-func GetLowongan(w http.ResponseWriter, r *http.Request) {
+func (h *LowonganHandler) GetLowongan(w http.ResponseWriter, r *http.Request) {
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 
@@ -75,7 +85,7 @@ func GetLowongan(w http.ResponseWriter, r *http.Request) {
 		Limit:   limit,
 	}
 
-	data, err := usecase.GetLowonganList(filter)
+	data, err := h.usecase.GetLowonganList(filter)
 	if err != nil {
 		errorResponse(w, http.StatusBadRequest, err.Error())
 		return
@@ -84,14 +94,14 @@ func GetLowongan(w http.ResponseWriter, r *http.Request) {
 	success(w, "Berhasil mengambil data lowongan", data)
 }
 
-func GetLowonganDetail(w http.ResponseWriter, r *http.Request) {
+func (h *LowonganHandler) GetLowonganDetail(w http.ResponseWriter, r *http.Request) {
 	id, err := getIDFromQuery(r)
 	if err != nil {
 		errorResponse(w, http.StatusBadRequest, "ID lowongan tidak valid")
 		return
 	}
 
-	data, err := usecase.GetLowonganDetail(id)
+	data, err := h.usecase.GetLowonganDetail(id)
 	if err != nil {
 		errorResponse(w, http.StatusNotFound, err.Error())
 		return
@@ -100,16 +110,16 @@ func GetLowonganDetail(w http.ResponseWriter, r *http.Request) {
 	success(w, "Berhasil mengambil detail lowongan", data)
 }
 
-func LowonganDetailHandler(w http.ResponseWriter, r *http.Request) {
+func (h *LowonganHandler) LowonganDetailHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodGet:
-		GetLowonganDetail(w, r)
+		h.GetLowonganDetail(w, r)
 	default:
 		errorResponse(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
 	}
 }
 
-func CreateLowongan(w http.ResponseWriter, r *http.Request) {
+func (h *LowonganHandler) CreateLowongan(w http.ResponseWriter, r *http.Request) {
 	var request domain.CreateLowonganRequest
 
 	err := json.NewDecoder(r.Body).Decode(&request)
@@ -118,7 +128,7 @@ func CreateLowongan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newLowongan, err := usecase.CreateLowongan(request)
+	newLowongan, err := h.usecase.CreateLowongan(request)
 	if err != nil {
 		errorResponse(w, http.StatusBadRequest, err.Error())
 		return
@@ -127,14 +137,14 @@ func CreateLowongan(w http.ResponseWriter, r *http.Request) {
 	created(w, "Lowongan berhasil ditambahkan", newLowongan)
 }
 
-func DeleteLowongan(w http.ResponseWriter, r *http.Request) {
+func (h *LowonganHandler) DeleteLowongan(w http.ResponseWriter, r *http.Request) {
 	id, err := getIDFromQuery(r)
 	if err != nil {
 		errorResponse(w, http.StatusBadRequest, "ID lowongan tidak valid")
 		return
 	}
 
-	err = usecase.DeleteLowongan(id)
+	err = h.usecase.DeleteLowongan(id)
 	if err != nil {
 		errorResponse(w, http.StatusNotFound, err.Error())
 		return
@@ -143,7 +153,7 @@ func DeleteLowongan(w http.ResponseWriter, r *http.Request) {
 	success(w, "Lowongan berhasil dihapus", nil)
 }
 
-func UpdateLowonganStatus(w http.ResponseWriter, r *http.Request) {
+func (h *LowonganHandler) UpdateLowonganStatus(w http.ResponseWriter, r *http.Request) {
 	id, err := getIDFromQuery(r)
 	if err != nil {
 		errorResponse(w, http.StatusBadRequest, "ID lowongan tidak valid")
@@ -158,7 +168,7 @@ func UpdateLowonganStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatedLowongan, err := usecase.UpdateLowonganStatus(id, request)
+	updatedLowongan, err := h.usecase.UpdateLowonganStatus(id, request)
 	if err != nil {
 		errorResponse(w, http.StatusBadRequest, err.Error())
 		return
@@ -167,7 +177,7 @@ func UpdateLowonganStatus(w http.ResponseWriter, r *http.Request) {
 	success(w, "Status lowongan berhasil diubah", updatedLowongan)
 }
 
-func UpdateLowongan(w http.ResponseWriter, r *http.Request) {
+func (h *LowonganHandler) UpdateLowongan(w http.ResponseWriter, r *http.Request) {
 	id, err := getIDFromQuery(r)
 	if err != nil {
 		errorResponse(w, http.StatusBadRequest, "ID lowongan tidak valid")
@@ -182,7 +192,7 @@ func UpdateLowongan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatedLowongan, err := usecase.UpdateLowongan(id, request)
+	updatedLowongan, err := h.usecase.UpdateLowongan(id, request)
 	if err != nil {
 		errorResponse(w, http.StatusBadRequest, err.Error())
 		return
@@ -191,16 +201,16 @@ func UpdateLowongan(w http.ResponseWriter, r *http.Request) {
 	success(w, "Lowongan berhasil diubah", updatedLowongan)
 }
 
-func LowonganStatusHandler(w http.ResponseWriter, r *http.Request) {
+func (h *LowonganHandler) LowonganStatusHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPut:
-		UpdateLowonganStatus(w, r)
+		h.UpdateLowonganStatus(w, r)
 	default:
 		errorResponse(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
 	}
 }
 
-func BulkUpdateLowonganStatus(w http.ResponseWriter, r *http.Request) {
+func (h *LowonganHandler) BulkUpdateLowonganStatus(w http.ResponseWriter, r *http.Request) {
 	var request domain.BulkUpdateStatusRequest
 
 	err := json.NewDecoder(r.Body).Decode(&request)
@@ -209,7 +219,7 @@ func BulkUpdateLowonganStatus(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = usecase.BulkUpdateLowonganStatus(request)
+	err = h.usecase.BulkUpdateLowonganStatus(request)
 	if err != nil {
 		errorResponse(w, http.StatusBadRequest, err.Error())
 		return
@@ -218,7 +228,7 @@ func BulkUpdateLowonganStatus(w http.ResponseWriter, r *http.Request) {
 	success(w, "Status lowongan terpilih berhasil diubah", nil)
 }
 
-func BulkDeleteLowongan(w http.ResponseWriter, r *http.Request) {
+func (h *LowonganHandler) BulkDeleteLowongan(w http.ResponseWriter, r *http.Request) {
 	var request domain.BulkDeleteRequest
 
 	err := json.NewDecoder(r.Body).Decode(&request)
@@ -227,7 +237,7 @@ func BulkDeleteLowongan(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = usecase.BulkDeleteLowongan(request)
+	err = h.usecase.BulkDeleteLowongan(request)
 	if err != nil {
 		errorResponse(w, http.StatusBadRequest, err.Error())
 		return
@@ -236,19 +246,19 @@ func BulkDeleteLowongan(w http.ResponseWriter, r *http.Request) {
 	success(w, "Lowongan terpilih berhasil dihapus", nil)
 }
 
-func LowonganBulkStatusHandler(w http.ResponseWriter, r *http.Request) {
+func (h *LowonganHandler) LowonganBulkStatusHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPut:
-		BulkUpdateLowonganStatus(w, r)
+		h.BulkUpdateLowonganStatus(w, r)
 	default:
 		errorResponse(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
 	}
 }
 
-func LowonganBulkDeleteHandler(w http.ResponseWriter, r *http.Request) {
+func (h *LowonganHandler) LowonganBulkDeleteHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodDelete:
-		BulkDeleteLowongan(w, r)
+		h.BulkDeleteLowongan(w, r)
 	default:
 		errorResponse(w, http.StatusMethodNotAllowed, "Method tidak diizinkan")
 	}
