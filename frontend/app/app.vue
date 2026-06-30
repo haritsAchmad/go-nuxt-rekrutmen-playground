@@ -17,6 +17,15 @@ const loginError = ref('')
 
 const isLoggedIn = computed(() => Boolean(authToken.value))
 const currentUser = computed(() => authUser.value || null)
+const authHeaders = computed(() => {
+  if (!authToken.value) {
+    return {}
+  }
+
+  return {
+    Authorization: `Bearer ${authToken.value}`
+  }
+})
 
 const form = reactive({
   judul: '',
@@ -60,7 +69,8 @@ const apiUrl = computed(() => {
 
 const { data, pending, error, refresh } = await useFetch(apiUrl, {
   immediate: false,
-  server: false
+  server: false,
+  headers: authHeaders
 })
 
 const paginationMeta = computed(() => {
@@ -105,6 +115,25 @@ onMounted(async () => {
   }
 })
 
+function logout() {
+  authToken.value = null
+  authUser.value = null
+  selectedIds.value = []
+  selectedLowongan.value = null
+  bulkMessage.value = ''
+  bulkError.value = ''
+}
+
+function handleUnauthorized(error) {
+  if (error?.statusCode === 401 || error?.response?.status === 401) {
+    logout()
+    loginError.value = 'Sesi login habis. Silakan login ulang.'
+    return true
+  }
+
+  return false
+}
+
 async function login() {
   loginLoading.value = true
   loginError.value = ''
@@ -129,15 +158,6 @@ async function login() {
   }
 }
 
-function logout() {
-  authToken.value = null
-  authUser.value = null
-  selectedIds.value = []
-  selectedLowongan.value = null
-  bulkMessage.value = ''
-  bulkError.value = ''
-}
-
 async function resetFilter() {
   filter.keyword = ''
   filter.status = ''
@@ -159,32 +179,44 @@ async function changeLimit() {
 }
 
 async function showDetail(id) {
-  const result = await $fetch(`http://localhost:8080/api/lowongan/detail?id=${id}`)
-  selectedLowongan.value = result.data
+  try {
+    const result = await $fetch(`http://localhost:8080/api/lowongan/detail?id=${id}`, {
+      headers: authHeaders.value
+    })
+    selectedLowongan.value = result.data
+  } catch (error) {
+    handleUnauthorized(error)
+  }
 }
 
 async function submitLowongan() {
-  if (editId.value) {
-    await $fetch(`http://localhost:8080/api/lowongan?id=${editId.value}`, {
-      method: 'PUT',
-      body: {
-        judul: form.judul,
-        unit: form.unit,
-        status: form.status || 'aktif'
-      }
-    })
-  } else {
-    await $fetch('http://localhost:8080/api/lowongan', {
-      method: 'POST',
-      body: {
-        judul: form.judul,
-        unit: form.unit
-      }
-    })
-  }
+  try {
+    if (editId.value) {
+      await $fetch(`http://localhost:8080/api/lowongan?id=${editId.value}`, {
+        method: 'PUT',
+        headers: authHeaders.value,
+        body: {
+          judul: form.judul,
+          unit: form.unit,
+          status: form.status || 'aktif'
+        }
+      })
+    } else {
+      await $fetch('http://localhost:8080/api/lowongan', {
+        method: 'POST',
+        headers: authHeaders.value,
+        body: {
+          judul: form.judul,
+          unit: form.unit
+        }
+      })
+    }
 
-  resetForm()
-  await refresh()
+    resetForm()
+    await refresh()
+  } catch (error) {
+    handleUnauthorized(error)
+  }
 }
 
 async function deleteLowongan(id) {
@@ -194,24 +226,34 @@ async function deleteLowongan(id) {
     return
   }
 
-  await $fetch(`http://localhost:8080/api/lowongan?id=${id}`, {
-    method: 'DELETE'
-  })
+  try {
+    await $fetch(`http://localhost:8080/api/lowongan?id=${id}`, {
+      method: 'DELETE',
+      headers: authHeaders.value
+    })
 
-  await refresh()
+    await refresh()
+  } catch (error) {
+    handleUnauthorized(error)
+  }
 }
 
 async function toggleStatus(lowongan) {
   const nextStatus = lowongan.status === 'aktif' ? 'nonaktif' : 'aktif'
 
-  await $fetch(`http://localhost:8080/api/lowongan/status?id=${lowongan.id}`, {
-    method: 'PUT',
-    body: {
-      status: nextStatus
-    }
-  })
+  try {
+    await $fetch(`http://localhost:8080/api/lowongan/status?id=${lowongan.id}`, {
+      method: 'PUT',
+      headers: authHeaders.value,
+      body: {
+        status: nextStatus
+      }
+    })
 
-  await refresh()
+    await refresh()
+  } catch (error) {
+    handleUnauthorized(error)
+  }
 }
 
 async function bulkUpdateStatus(status) {
@@ -228,6 +270,7 @@ async function bulkUpdateStatus(status) {
   try {
     await $fetch('http://localhost:8080/api/lowongan/bulk-status', {
       method: 'PUT',
+      headers: authHeaders.value,
       body: {
         ids: selectedIds.value,
         status: status
@@ -238,7 +281,9 @@ async function bulkUpdateStatus(status) {
     bulkMessage.value = 'Status lowongan terpilih berhasil diubah'
     await refresh()
   } catch (error) {
-    bulkError.value = 'Gagal mengubah status lowongan'
+    if (!handleUnauthorized(error)) {
+      bulkError.value = 'Gagal mengubah status lowongan'
+    }
   } finally {
     bulkLoading.value = false
   }
@@ -264,6 +309,7 @@ async function bulkDelete() {
   try {
     await $fetch('http://localhost:8080/api/lowongan/bulk-delete', {
       method: 'DELETE',
+      headers: authHeaders.value,
       body: {
         ids: selectedIds.value
       }
@@ -273,7 +319,9 @@ async function bulkDelete() {
     bulkMessage.value = 'Lowongan terpilih berhasil dihapus'
     await refresh()
   } catch (error) {
-    bulkError.value = 'Gagal menghapus lowongan'
+    if (!handleUnauthorized(error)) {
+      bulkError.value = 'Gagal menghapus lowongan'
+    }
   } finally {
     bulkLoading.value = false
   }
