@@ -8,27 +8,12 @@ import (
 )
 
 func RegisterRoutes(lowonganHandler *handler.LowonganHandler) {
-	http.HandleFunc("/health", withCors(healthHandler))
-	http.HandleFunc("/api/lowongan", withCors(lowonganHandler.LowonganHandler))
-	http.HandleFunc("/api/lowongan/detail", withCors(lowonganHandler.LowonganDetailHandler))
-	http.HandleFunc("/api/lowongan/status", withCors(lowonganHandler.LowonganStatusHandler))
-	http.HandleFunc("/api/lowongan/bulk-status", withCors(lowonganHandler.LowonganBulkStatusHandler))
-	http.HandleFunc("/api/lowongan/bulk-delete", withCors(lowonganHandler.LowonganBulkDeleteHandler))
-}
-
-func withCors(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		next(w, r)
-	}
+	http.HandleFunc("/health", healthHandler)
+	http.HandleFunc("/api/lowongan", lowonganHandler.LowonganHandler)
+	http.HandleFunc("/api/lowongan/detail", lowonganHandler.LowonganDetailHandler)
+	http.HandleFunc("/api/lowongan/status", lowonganHandler.LowonganStatusHandler)
+	http.HandleFunc("/api/lowongan/bulk-status", lowonganHandler.LowonganBulkStatusHandler)
+	http.HandleFunc("/api/lowongan/bulk-delete", lowonganHandler.LowonganBulkDeleteHandler)
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
