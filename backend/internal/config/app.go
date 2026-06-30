@@ -7,6 +7,10 @@ type AppConfig struct {
 	Env  string
 }
 
+type AuthConfig struct {
+	SecretKey string
+}
+
 type DatabaseConfig struct {
 	Host     string
 	Port     int
@@ -19,6 +23,7 @@ type DatabaseConfig struct {
 
 type Config struct {
 	App      AppConfig
+	Auth     AuthConfig
 	Database DatabaseConfig
 }
 
@@ -27,6 +32,9 @@ func Load() Config {
 		App: AppConfig{
 			Port: GetString("APP_PORT", "8080"),
 			Env:  GetString("APP_ENV", "local"),
+		},
+		Auth: AuthConfig{
+			SecretKey: GetString("AUTH_SECRET_KEY", "playground-secret-key"),
 		},
 		Database: DatabaseConfig{
 			Host:     GetString("DB_HOST", "localhost"),
