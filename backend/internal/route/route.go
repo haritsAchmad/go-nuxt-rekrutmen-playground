@@ -10,14 +10,16 @@ import (
 
 func RegisterRoutes(lowonganHandler *handler.LowonganHandler, authHandler *handler.AuthHandler, authSecretKey string) {
 	authMiddleware := middleware.Auth(authSecretKey)
+	canReadLowongan := middleware.RequireRoles("superadmin", "admin", "viewer")
+	canManageLowongan := middleware.RequireRoles("superadmin", "admin")
 
 	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/api/auth/login", authHandler.LoginHandler)
-	http.Handle("/api/lowongan", authMiddleware(http.HandlerFunc(lowonganHandler.LowonganHandler)))
-	http.Handle("/api/lowongan/detail", authMiddleware(http.HandlerFunc(lowonganHandler.LowonganDetailHandler)))
-	http.Handle("/api/lowongan/status", authMiddleware(http.HandlerFunc(lowonganHandler.LowonganStatusHandler)))
-	http.Handle("/api/lowongan/bulk-status", authMiddleware(http.HandlerFunc(lowonganHandler.LowonganBulkStatusHandler)))
-	http.Handle("/api/lowongan/bulk-delete", authMiddleware(http.HandlerFunc(lowonganHandler.LowonganBulkDeleteHandler)))
+	http.Handle("/api/lowongan", authMiddleware(canReadLowongan(canManageLowongan(http.HandlerFunc(lowonganHandler.LowonganHandler)))))
+	http.Handle("/api/lowongan/detail", authMiddleware(canReadLowongan(http.HandlerFunc(lowonganHandler.LowonganDetailHandler))))
+	http.Handle("/api/lowongan/status", authMiddleware(canManageLowongan(http.HandlerFunc(lowonganHandler.LowonganStatusHandler))))
+	http.Handle("/api/lowongan/bulk-status", authMiddleware(canManageLowongan(http.HandlerFunc(lowonganHandler.LowonganBulkStatusHandler))))
+	http.Handle("/api/lowongan/bulk-delete", authMiddleware(canManageLowongan(http.HandlerFunc(lowonganHandler.LowonganBulkDeleteHandler))))
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
