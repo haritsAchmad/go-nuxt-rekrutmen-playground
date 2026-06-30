@@ -7,8 +7,9 @@ import (
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/handler"
 )
 
-func RegisterRoutes(lowonganHandler *handler.LowonganHandler) {
+func RegisterRoutes(lowonganHandler *handler.LowonganHandler, authHandler *handler.AuthHandler) {
 	http.HandleFunc("/health", healthHandler)
+	http.HandleFunc("/api/auth/login", authHandler.LoginHandler)
 	http.HandleFunc("/api/lowongan", lowonganHandler.LowonganHandler)
 	http.HandleFunc("/api/lowongan/detail", lowonganHandler.LowonganDetailHandler)
 	http.HandleFunc("/api/lowongan/status", lowonganHandler.LowonganStatusHandler)
