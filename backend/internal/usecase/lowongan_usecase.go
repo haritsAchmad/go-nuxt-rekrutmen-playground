@@ -7,14 +7,33 @@ import (
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/repository"
 )
 
+type LowonganRepository interface {
+	GetAllLowongan(filter domain.LowonganFilterRequest) (domain.LowonganListResponse, error)
+	GetLowonganByID(id int) (domain.Lowongan, error)
+	CreateLowongan(lowongan domain.Lowongan) (domain.Lowongan, error)
+	DeleteLowongan(id int) error
+	UpdateLowonganStatus(id int, status string) (domain.Lowongan, error)
+	UpdateLowongan(id int, lowongan domain.Lowongan) (domain.Lowongan, error)
+	BulkUpdateLowonganStatus(ids []int, status string) error
+	BulkDeleteLowongan(ids []int) error
+}
+
+var lowonganRepository LowonganRepository = repository.NewLowonganMemoryRepository()
+
+func SetLowonganRepository(repo LowonganRepository) {
+	if repo == nil {
+		return
+	}
+
+	lowonganRepository = repo
+}
+
 func GetLowonganList(filter domain.LowonganFilterRequest) (domain.LowonganListResponse, error) {
 	if filter.Status != "" && filter.Status != "aktif" && filter.Status != "nonaktif" {
 		return domain.LowonganListResponse{}, errors.New("status filter harus aktif atau nonaktif")
 	}
 
-	data := repository.GetAllLowongan(filter)
-
-	return data, nil
+	return lowonganRepository.GetAllLowongan(filter)
 }
 
 func GetLowonganDetail(id int) (domain.Lowongan, error) {
@@ -22,7 +41,7 @@ func GetLowonganDetail(id int) (domain.Lowongan, error) {
 		return domain.Lowongan{}, errors.New("ID lowongan tidak valid")
 	}
 
-	return repository.GetLowonganByID(id)
+	return lowonganRepository.GetLowonganByID(id)
 }
 
 func CreateLowongan(request domain.CreateLowonganRequest) (domain.Lowongan, error) {
@@ -36,18 +55,11 @@ func CreateLowongan(request domain.CreateLowonganRequest) (domain.Lowongan, erro
 		Status: "aktif",
 	}
 
-	newLowongan := repository.CreateLowongan(lowongan)
-
-	return newLowongan, nil
+	return lowonganRepository.CreateLowongan(lowongan)
 }
 
 func DeleteLowongan(id int) error {
-	err := repository.DeleteLowongan(id)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return lowonganRepository.DeleteLowongan(id)
 }
 
 func UpdateLowonganStatus(id int, request domain.UpdateLowonganStatusRequest) (domain.Lowongan, error) {
@@ -55,12 +67,7 @@ func UpdateLowonganStatus(id int, request domain.UpdateLowonganStatusRequest) (d
 		return domain.Lowongan{}, errors.New("status harus aktif atau nonaktif")
 	}
 
-	updatedLowongan, err := repository.UpdateLowonganStatus(id, request.Status)
-	if err != nil {
-		return domain.Lowongan{}, err
-	}
-
-	return updatedLowongan, nil
+	return lowonganRepository.UpdateLowonganStatus(id, request.Status)
 }
 
 func UpdateLowongan(id int, request domain.UpdateLowonganRequest) (domain.Lowongan, error) {
@@ -78,12 +85,7 @@ func UpdateLowongan(id int, request domain.UpdateLowonganRequest) (domain.Lowong
 		Status: request.Status,
 	}
 
-	updatedLowongan, err := repository.UpdateLowongan(id, lowongan)
-	if err != nil {
-		return domain.Lowongan{}, err
-	}
-
-	return updatedLowongan, nil
+	return lowonganRepository.UpdateLowongan(id, lowongan)
 }
 
 func BulkUpdateLowonganStatus(request domain.BulkUpdateStatusRequest) error {
@@ -95,7 +97,7 @@ func BulkUpdateLowonganStatus(request domain.BulkUpdateStatusRequest) error {
 		return errors.New("status harus aktif atau nonaktif")
 	}
 
-	return repository.BulkUpdateLowonganStatus(request.IDs, request.Status)
+	return lowonganRepository.BulkUpdateLowonganStatus(request.IDs, request.Status)
 }
 
 func BulkDeleteLowongan(request domain.BulkDeleteRequest) error {
@@ -103,5 +105,5 @@ func BulkDeleteLowongan(request domain.BulkDeleteRequest) error {
 		return errors.New("minimal pilih satu lowongan")
 	}
 
-	return repository.BulkDeleteLowongan(request.IDs)
+	return lowonganRepository.BulkDeleteLowongan(request.IDs)
 }
