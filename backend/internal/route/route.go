@@ -5,16 +5,19 @@ import (
 	"net/http"
 
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/handler"
+	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/middleware"
 )
 
-func RegisterRoutes(lowonganHandler *handler.LowonganHandler, authHandler *handler.AuthHandler) {
+func RegisterRoutes(lowonganHandler *handler.LowonganHandler, authHandler *handler.AuthHandler, authSecretKey string) {
+	authMiddleware := middleware.Auth(authSecretKey)
+
 	http.HandleFunc("/health", healthHandler)
 	http.HandleFunc("/api/auth/login", authHandler.LoginHandler)
-	http.HandleFunc("/api/lowongan", lowonganHandler.LowonganHandler)
-	http.HandleFunc("/api/lowongan/detail", lowonganHandler.LowonganDetailHandler)
-	http.HandleFunc("/api/lowongan/status", lowonganHandler.LowonganStatusHandler)
-	http.HandleFunc("/api/lowongan/bulk-status", lowonganHandler.LowonganBulkStatusHandler)
-	http.HandleFunc("/api/lowongan/bulk-delete", lowonganHandler.LowonganBulkDeleteHandler)
+	http.Handle("/api/lowongan", authMiddleware(http.HandlerFunc(lowonganHandler.LowonganHandler)))
+	http.Handle("/api/lowongan/detail", authMiddleware(http.HandlerFunc(lowonganHandler.LowonganDetailHandler)))
+	http.Handle("/api/lowongan/status", authMiddleware(http.HandlerFunc(lowonganHandler.LowonganStatusHandler)))
+	http.Handle("/api/lowongan/bulk-status", authMiddleware(http.HandlerFunc(lowonganHandler.LowonganBulkStatusHandler)))
+	http.Handle("/api/lowongan/bulk-delete", authMiddleware(http.HandlerFunc(lowonganHandler.LowonganBulkDeleteHandler)))
 }
 
 func healthHandler(w http.ResponseWriter, r *http.Request) {
