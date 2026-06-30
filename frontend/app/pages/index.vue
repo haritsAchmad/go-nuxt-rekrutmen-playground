@@ -11,8 +11,7 @@ const authHeaders = computed(() => authStore.authHeaders)
 const form = reactive({
   judul: '',
   unit: '',
-  status: 'aktif',
-  jumlah: ''
+  status: 'aktif'
 })
 
 const filter = reactive({
@@ -364,16 +363,6 @@ function toggleSelectAll() {
         v-model="form.unit"
         label="Unit"
         placeholder="Contoh: Direktorat SDM"
-      />
-
-      <BaseInput
-        v-model="form.jumlah"
-        label="Jumlah Dibutuhkan"
-        type="number"
-        :min="1"
-        :max="100"
-        placeholder="Contoh: 3"
-        number-only
       />
 
       <BaseButton
