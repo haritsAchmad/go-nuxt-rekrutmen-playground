@@ -32,7 +32,7 @@ func main() {
 	authUsecase := usecase.NewAuthUsecase(authRepo, cfg.Auth.SecretKey)
 	authHandler := handler.NewAuthHandler(authUsecase)
 
-	route.RegisterRoutes(lowonganHandler, authHandler)
+	route.RegisterRoutes(lowonganHandler, authHandler, cfg.Auth.SecretKey)
 
 	serverHandler := middleware.Recovery(
 		middleware.Logger(
