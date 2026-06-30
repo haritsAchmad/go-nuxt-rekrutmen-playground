@@ -10,14 +10,14 @@ onMounted(() => {
   authStore.restoreSession()
 
   if (authStore.isLoggedIn) {
-    navigateTo('/lowongan')
+    navigateTo('/')
   }
 })
 
 async function login() {
   try {
     await authStore.login(loginForm.email, loginForm.password)
-    await navigateTo('/lowongan')
+    await navigateTo('/')
   } catch (error) {
     // error message sudah disimpan di authStore
   }
