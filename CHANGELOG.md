@@ -112,8 +112,22 @@ This changelog is based on the Git history from 2026-06-18 through
 - Add users table seed SQL and an `AUTH_SECRET` environment example.
 - Allow the `Authorization` header in CORS responses.
 - Add a backend devtool command for creating users.
+- Extend Lowongan records and create/update requests with opening date, closing
+  date, and description fields.
+- Persist the new Lowongan detail fields in PostgreSQL and add the corresponding
+  database migration.
+- Add basic date parsing and validation, including rejecting closing dates that
+  precede opening dates.
 
 ### Frontend
 
 - Add a cookie-based login flow to the Nuxt app.
 - Send the auth token from Nuxt API requests.
+- Enable Pinia and move authentication state, session restoration, login,
+  logout, and authorization headers into a dedicated auth store.
+- Split the application into Nuxt pages, add a dedicated login page, and protect
+  the Lowongan page with route middleware.
+- Add opening date, closing date, description, and editable status fields to the
+  Lowongan form and detail views.
+- Add client-side date-range validation and success or error feedback for
+  Lowongan actions and filter changes.
