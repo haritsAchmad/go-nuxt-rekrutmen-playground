@@ -1,7 +1,7 @@
 # Changelog
 
 This changelog is based on the Git history from 2026-06-18 through
-2026-06-30. No project changes were recorded from 2026-06-18 through
+2026-07-02. No project changes were recorded from 2026-06-18 through
 2026-06-22; development recorded in this repository started on 2026-06-23.
 
 ## 2026-06-23
@@ -131,3 +131,37 @@ This changelog is based on the Git history from 2026-06-18 through
   Lowongan form and detail views.
 - Add client-side date-range validation and success or error feedback for
   Lowongan actions and filter changes.
+
+## 2026-07-02
+
+### Backend
+
+- Add newest and oldest Lowongan sorting before pagination, using record IDs
+  as the current creation-order indicator.
+- Validate supported sort values in the Lowongan use case.
+- Reorganize auth and Lowongan code into feature-specific subpackages under
+  the domain, handler, use case, and repository layers.
+- Move shared JSON response writing into the parent handler package.
+- Update dependency injection and route registration to use the new package
+  structure without changing existing API endpoints.
+
+### Frontend
+
+- Fix checkbox layout shifting by separating checkbox styles from shared text
+  input styles and disabling checkbox transitions.
+- Add a responsive authenticated application layout with a sidebar, sticky
+  header, mobile navigation overlay, and active navigation states.
+- Replace the original root Lowongan page with a dashboard and move Lowongan
+  management to `/lowongan`.
+- Add a sidebar brand mark, user avatar initials, profile dropdown, logout
+  action, and a dedicated `/profil` page.
+- Remove the ID and Unit columns from the Lowongan table and display Unit as
+  secondary metadata beneath the job title.
+- Center the opening date, closing date, status, and action columns.
+- Replace row action text buttons with accessible detail, edit, and delete
+  icon buttons, and keep status changes in the bulk action controls.
+- Add newest and oldest sort controls connected to server-side sorting.
+- Constrain table column widths and truncate long titles, units, and
+  descriptions with hover tooltips.
+- Preserve horizontal table scrolling and responsive navigation behavior on
+  smaller screens.
