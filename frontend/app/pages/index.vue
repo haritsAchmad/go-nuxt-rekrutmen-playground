@@ -27,7 +27,6 @@ const currentUser = computed(() => authStore.user)
         </div>
       </div>
     </section>
-
     <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
       <NuxtLink
         to="/lowongan"
