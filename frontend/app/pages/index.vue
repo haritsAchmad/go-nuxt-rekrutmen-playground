@@ -25,6 +25,7 @@ const filter = reactive({
 const editId = ref(null)
 const selectedIds = ref([])
 const selectedLowongan = ref(null)
+const isFormModalOpen = ref(false)
 
 const bulkLoading = ref(false)
 const bulkMessage = ref('')
@@ -52,6 +53,9 @@ const apiUrl = computed(() => {
 
   return `http://localhost:8080/api/lowongan?${params.toString()}`
 })
+
+const modalTitle = computed(() => editId.value ? 'Edit Lowongan' : 'Tambah Lowongan')
+const modalDescription = computed(() => editId.value ? 'Perbarui data lowongan yang dipilih.' : 'Buat lowongan baru dari form singkat ini.')
 
 const { data, pending, error, refresh } = await useFetch(apiUrl, {
   immediate: false,
@@ -256,9 +260,14 @@ async function submitLowongan() {
     return
   }
 
-  try {
-    const isEditing = Boolean(editId.value)
+  const isEditing = Boolean(editId.value)
+  const yakin = confirm(isEditing ? 'Yakin mau simpan perubahan lowongan ini?' : 'Yakin mau menambahkan lowongan baru?')
 
+  if (!yakin) {
+    return
+  }
+
+  try {
     if (editId.value) {
       await $fetch(`http://localhost:8080/api/lowongan?id=${editId.value}`, {
         method: 'PUT',
@@ -273,7 +282,7 @@ async function submitLowongan() {
       })
     }
 
-    resetForm()
+    closeFormModal()
     await refresh()
     setActionMessage(isEditing ? 'Lowongan berhasil diperbarui' : 'Lowongan berhasil ditambahkan')
   } catch (error) {
@@ -417,6 +426,12 @@ async function previousPage() {
   await refresh()
 }
 
+function openCreateModal() {
+  resetForm()
+  actionError.value = ''
+  isFormModalOpen.value = true
+}
+
 function editLowongan(lowongan) {
   editId.value = lowongan.id
   form.judul = lowongan.judul
@@ -425,6 +440,13 @@ function editLowongan(lowongan) {
   form.tanggalTutup = dateForEdit(lowongan.tanggalTutup)
   form.deskripsi = lowongan.deskripsi
   form.status = lowongan.status
+  actionError.value = ''
+  isFormModalOpen.value = true
+}
+
+function closeFormModal() {
+  isFormModalOpen.value = false
+  resetForm()
 }
 
 function resetForm() {
@@ -479,232 +501,185 @@ function toggleSelectAll() {
         {{ actionError }}
       </div>
 
-      <section class="grid gap-6 xl:grid-cols-[0.95fr_1.45fr]">
-        <form class="dashboard-card space-y-5" @submit.prevent="submitLowongan">
+      <section class="dashboard-card">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p class="text-sm font-bold uppercase tracking-wide text-indigo-600">
-              {{ editId ? 'Mode edit' : 'Tambah data' }}
-            </p>
-            <h2 class="mt-1 text-2xl font-black text-slate-950">
-              {{ editId ? 'Edit Lowongan' : 'Buka Lowongan Baru' }}
-            </h2>
-            <p class="mt-2 text-sm text-slate-500">
-              Isi data lowongan, tanggal, dan ringkasan posisi.
-            </p>
+            <p class="text-sm font-bold uppercase tracking-wide text-indigo-600">Filter</p>
+            <h2 class="mt-1 text-2xl font-black text-slate-950">Cari Lowongan</h2>
           </div>
 
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div class="sm:col-span-2">
-              <BaseInput v-model="form.judul" label="Judul Lowongan" required maxlength="100" />
-            </div>
+          <div class="grid w-full gap-3 sm:grid-cols-[1fr_180px_auto_auto] lg:w-auto">
+            <input v-model="filter.keyword" class="w-full" type="text" placeholder="Cari judul/unit">
 
-            <div class="sm:col-span-2">
-              <BaseInput v-model="form.unit" label="Unit" placeholder="Contoh: Direktorat SDM" />
-            </div>
-
-            <BaseInput
-              v-model="form.tanggalBuka"
-              label="Tanggal Buka"
-              type="date"
-              :max="form.tanggalTutup || null"
-              @change="validateDateRange"
-            />
-
-            <BaseInput
-              v-model="form.tanggalTutup"
-              label="Tanggal Tutup"
-              type="date"
-              :min="form.tanggalBuka || null"
-              @change="validateDateRange"
-            />
-          </div>
-
-          <div>
-            <label class="mb-2 block text-sm font-semibold text-slate-700">Deskripsi</label>
-            <textarea
-              v-model="form.deskripsi"
-              placeholder="Tulis ringkasan pekerjaan, tanggung jawab, atau kualifikasi utama"
-            ></textarea>
-          </div>
-
-          <div v-if="editId">
-            <label class="mb-2 block text-sm font-semibold text-slate-700">Status</label>
-            <select v-model="form.status" class="w-full">
+            <select v-model="filter.status" class="w-full">
+              <option value="">Semua Status</option>
               <option value="aktif">Aktif</option>
               <option value="nonaktif">Nonaktif</option>
             </select>
-          </div>
 
-          <div class="flex flex-wrap gap-3 pt-2">
-            <button type="submit" :class="editId ? 'primary-button' : 'success-button'">
-              {{ editId ? 'Simpan Perubahan' : 'Buka Lowongan' }}
+            <button type="button" class="primary-button" @click="applyFilter">
+              Cari
             </button>
 
-            <button v-if="editId" type="button" class="muted-button" @click="resetForm">
-              Batal Edit
+            <button type="button" class="muted-button" @click="resetFilter">
+              Reset
             </button>
           </div>
-        </form>
+        </div>
+      </section>
 
-        <div class="space-y-6">
-          <section class="dashboard-card">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <section class="dashboard-card space-y-5">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <p class="text-sm font-bold uppercase tracking-wide text-indigo-600">Data lowongan</p>
+            <h2 class="mt-1 text-2xl font-black text-slate-950">Daftar Lowongan</h2>
+            <p class="mt-1 text-sm text-slate-500">
+              Menampilkan {{ showingFrom }} - {{ showingTo }} dari {{ paginationMeta.total }} data
+            </p>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <select v-model="limit" :disabled="pending" class="w-32" @change="changeLimit">
+              <option :value="5">5 / page</option>
+              <option :value="10">10 / page</option>
+              <option :value="25">25 / page</option>
+              <option :value="50">50 / page</option>
+            </select>
+
+            <button type="button" class="primary-button" @click="openCreateModal">
+              + Tambah Lowongan
+            </button>
+          </div>
+        </div>
+
+        <Transition name="fade">
+          <div v-if="selectedIds.length > 0" class="rounded-2xl border border-indigo-100 bg-indigo-50/80 p-4 shadow-sm">
+            <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <p class="text-sm font-bold uppercase tracking-wide text-indigo-600">Filter</p>
-                <h2 class="mt-1 text-2xl font-black text-slate-950">Cari Lowongan</h2>
-              </div>
-
-              <div class="grid w-full gap-3 sm:grid-cols-[1fr_180px_auto_auto] lg:w-auto">
-                <input v-model="filter.keyword" class="w-full" type="text" placeholder="Cari judul/unit">
-
-                <select v-model="filter.status" class="w-full">
-                  <option value="">Semua Status</option>
-                  <option value="aktif">Aktif</option>
-                  <option value="nonaktif">Nonaktif</option>
-                </select>
-
-                <button type="button" class="primary-button" @click="applyFilter">
-                  Cari
-                </button>
-
-                <button type="button" class="muted-button" @click="resetFilter">
-                  Reset
-                </button>
-              </div>
-            </div>
-          </section>
-
-          <section class="dashboard-card space-y-5">
-            <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <div>
-                <p class="text-sm font-bold uppercase tracking-wide text-indigo-600">Bulk action</p>
-                <h2 class="mt-1 text-2xl font-black text-slate-950">Daftar Lowongan</h2>
-                <p class="mt-1 text-sm text-slate-500">Terpilih: {{ selectedIds.length }} lowongan</p>
+                <p class="text-sm font-bold text-indigo-800">{{ selectedIds.length }} lowongan dipilih</p>
+                <p class="text-xs text-indigo-600">Pilih aksi cepat untuk data yang sudah dicentang.</p>
               </div>
 
               <div class="flex flex-wrap gap-2">
-                <button type="button" class="success-button" :disabled="selectedIds.length === 0 || bulkLoading" @click="bulkUpdateStatus('aktif')">
+                <button type="button" class="success-button" :disabled="bulkLoading" @click="bulkUpdateStatus('aktif')">
                   Aktifkan
                 </button>
 
-                <button type="button" class="muted-button" :disabled="selectedIds.length === 0 || bulkLoading" @click="bulkUpdateStatus('nonaktif')">
+                <button type="button" class="muted-button" :disabled="bulkLoading" @click="bulkUpdateStatus('nonaktif')">
                   Nonaktifkan
                 </button>
 
-                <button type="button" class="danger-button" :disabled="selectedIds.length === 0 || bulkLoading" @click="bulkDelete">
+                <button type="button" class="danger-button" :disabled="bulkLoading" @click="bulkDelete">
                   Hapus
                 </button>
 
-                <select v-model="limit" :disabled="pending" class="w-32" @change="changeLimit">
-                  <option :value="5">5 / page</option>
-                  <option :value="10">10 / page</option>
-                  <option :value="25">25 / page</option>
-                  <option :value="50">50 / page</option>
-                </select>
-              </div>
-            </div>
-
-            <div v-if="bulkMessage" class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
-              {{ bulkMessage }}
-            </div>
-
-            <div v-if="bulkError" class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
-              {{ bulkError }}
-            </div>
-
-            <div v-if="bulkLoading" class="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-700">
-              Memproses bulk action...
-            </div>
-
-            <p v-if="pending" class="soft-panel text-sm font-semibold text-slate-600">Loading data lowongan...</p>
-            <p v-else-if="error" class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">Gagal ambil data lowongan</p>
-
-            <div v-if="!pending && !error" class="overflow-hidden rounded-2xl border border-slate-200">
-              <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
-                  <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-                    <tr>
-                      <th class="px-4 py-3">
-                        <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll">
-                      </th>
-                      <th class="px-4 py-3">ID</th>
-                      <th class="px-4 py-3">Judul</th>
-                      <th class="px-4 py-3">Unit</th>
-                      <th class="px-4 py-3">Buka</th>
-                      <th class="px-4 py-3">Tutup</th>
-                      <th class="px-4 py-3">Status</th>
-                      <th class="px-4 py-3">Deskripsi</th>
-                      <th class="px-4 py-3">Aksi</th>
-                    </tr>
-                  </thead>
-
-                  <tbody class="divide-y divide-slate-100 bg-white">
-                    <tr v-for="lowongan in lowonganList" :key="lowongan.id" class="hover:bg-indigo-50/40">
-                      <td class="px-4 py-4">
-                        <input v-model="selectedIds" type="checkbox" :value="lowongan.id">
-                      </td>
-                      <td class="px-4 py-4 font-semibold text-slate-500">#{{ lowongan.id }}</td>
-                      <td class="px-4 py-4 font-bold text-slate-900">{{ lowongan.judul }}</td>
-                      <td class="px-4 py-4 text-slate-600">{{ lowongan.unit }}</td>
-                      <td class="px-4 py-4 text-slate-600">{{ formatDate(lowongan.tanggalBuka) }}</td>
-                      <td class="px-4 py-4 text-slate-600">{{ formatDate(lowongan.tanggalTutup) }}</td>
-                      <td class="px-4 py-4">
-                        <span :class="lowongan.status === 'aktif' ? 'bg-emerald-100 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-600 ring-slate-200'" class="inline-flex rounded-full px-3 py-1 text-xs font-bold ring-1">
-                          {{ lowongan.status }}
-                        </span>
-                      </td>
-                      <td class="max-w-xs px-4 py-4 text-slate-600">
-                        <p class="line-clamp-2">{{ lowongan.deskripsi || '-' }}</p>
-                      </td>
-                      <td class="px-4 py-4">
-                        <div class="flex flex-wrap gap-2">
-                          <button type="button" class="muted-button px-3 py-1.5" @click="editLowongan(lowongan)">
-                            Edit
-                          </button>
-
-                          <button type="button" class="muted-button px-3 py-1.5" @click="showDetail(lowongan.id)">
-                            Detail
-                          </button>
-
-                          <button type="button" class="primary-button px-3 py-1.5" @click="toggleStatus(lowongan)">
-                            {{ lowongan.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan' }}
-                          </button>
-
-                          <button type="button" class="danger-button px-3 py-1.5" @click="deleteLowongan(lowongan.id)">
-                            Hapus
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-
-                    <tr v-if="lowonganList.length === 0">
-                      <td colspan="9" class="px-4 py-10 text-center text-sm font-semibold text-slate-500">
-                        Belum ada data lowongan yang cocok.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div class="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <span class="text-sm font-medium text-slate-500">
-                Menampilkan {{ showingFrom }} - {{ showingTo }} dari {{ paginationMeta.total }} data
-              </span>
-
-              <div class="flex items-center gap-2">
-                <button type="button" class="muted-button" :disabled="page <= 1 || pending" @click="previousPage">
-                  Sebelumnya
-                </button>
-                <span class="rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700">
-                  {{ paginationMeta.page }} / {{ paginationMeta.total_page }}
-                </span>
-                <button type="button" class="muted-button" :disabled="page >= paginationMeta.total_page || pending" @click="nextPage">
-                  Berikutnya
+                <button type="button" class="muted-button" :disabled="bulkLoading" @click="selectedIds = []">
+                  Batal Pilih
                 </button>
               </div>
             </div>
-          </section>
+          </div>
+        </Transition>
+
+        <div v-if="bulkMessage" class="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">
+          {{ bulkMessage }}
+        </div>
+
+        <div v-if="bulkError" class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
+          {{ bulkError }}
+        </div>
+
+        <div v-if="bulkLoading" class="rounded-2xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-700">
+          Memproses aksi pilihan...
+        </div>
+
+        <p v-if="pending" class="soft-panel text-sm font-semibold text-slate-600">Loading data lowongan...</p>
+        <p v-else-if="error" class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">Gagal ambil data lowongan</p>
+
+        <div v-if="!pending && !error" class="overflow-hidden rounded-2xl border border-slate-200">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200 text-left text-sm">
+              <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                <tr>
+                  <th class="px-4 py-3">
+                    <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll">
+                  </th>
+                  <th class="px-4 py-3">ID</th>
+                  <th class="px-4 py-3">Judul</th>
+                  <th class="px-4 py-3">Unit</th>
+                  <th class="px-4 py-3">Buka</th>
+                  <th class="px-4 py-3">Tutup</th>
+                  <th class="px-4 py-3">Status</th>
+                  <th class="px-4 py-3">Deskripsi</th>
+                  <th class="px-4 py-3">Aksi</th>
+                </tr>
+              </thead>
+
+              <tbody class="divide-y divide-slate-100 bg-white">
+                <tr v-for="lowongan in lowonganList" :key="lowongan.id" class="hover:bg-indigo-50/40">
+                  <td class="px-4 py-4">
+                    <input v-model="selectedIds" type="checkbox" :value="lowongan.id">
+                  </td>
+                  <td class="px-4 py-4 font-semibold text-slate-500">#{{ lowongan.id }}</td>
+                  <td class="px-4 py-4 font-bold text-slate-900">{{ lowongan.judul }}</td>
+                  <td class="px-4 py-4 text-slate-600">{{ lowongan.unit }}</td>
+                  <td class="px-4 py-4 text-slate-600">{{ formatDate(lowongan.tanggalBuka) }}</td>
+                  <td class="px-4 py-4 text-slate-600">{{ formatDate(lowongan.tanggalTutup) }}</td>
+                  <td class="px-4 py-4">
+                    <span :class="lowongan.status === 'aktif' ? 'bg-emerald-100 text-emerald-700 ring-emerald-200' : 'bg-slate-100 text-slate-600 ring-slate-200'" class="inline-flex rounded-full px-3 py-1 text-xs font-bold ring-1">
+                      {{ lowongan.status }}
+                    </span>
+                  </td>
+                  <td class="max-w-xs px-4 py-4 text-slate-600">
+                    <p class="line-clamp-2">{{ lowongan.deskripsi || '-' }}</p>
+                  </td>
+                  <td class="px-4 py-4">
+                    <div class="flex flex-wrap gap-2">
+                      <button type="button" class="muted-button px-3 py-1.5" @click="editLowongan(lowongan)">
+                        Edit
+                      </button>
+
+                      <button type="button" class="muted-button px-3 py-1.5" @click="showDetail(lowongan.id)">
+                        Detail
+                      </button>
+
+                      <button type="button" class="primary-button px-3 py-1.5" @click="toggleStatus(lowongan)">
+                        {{ lowongan.status === 'aktif' ? 'Nonaktifkan' : 'Aktifkan' }}
+                      </button>
+
+                      <button type="button" class="danger-button px-3 py-1.5" @click="deleteLowongan(lowongan.id)">
+                        Hapus
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr v-if="lowonganList.length === 0">
+                  <td colspan="9" class="px-4 py-10 text-center text-sm font-semibold text-slate-500">
+                    Belum ada data lowongan yang cocok.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+          <span class="text-sm font-medium text-slate-500">
+            Menampilkan {{ showingFrom }} - {{ showingTo }} dari {{ paginationMeta.total }} data
+          </span>
+
+          <div class="flex items-center gap-2">
+            <button type="button" class="muted-button" :disabled="page <= 1 || pending" @click="previousPage">
+              Sebelumnya
+            </button>
+            <span class="rounded-xl bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700">
+              {{ paginationMeta.page }} / {{ paginationMeta.total_page }}
+            </span>
+            <button type="button" class="muted-button" :disabled="page >= paginationMeta.total_page || pending" @click="nextPage">
+              Berikutnya
+            </button>
+          </div>
         </div>
       </section>
 
@@ -746,5 +721,86 @@ function toggleSelectAll() {
         </div>
       </section>
     </div>
+
+    <Teleport to="body">
+      <Transition name="fade">
+        <div v-if="isFormModalOpen" class="fixed inset-0 z-50 grid place-items-center bg-slate-950/60 px-4 py-6 backdrop-blur-sm" @click.self="closeFormModal">
+          <form class="w-full max-w-xl rounded-[2rem] border border-white/70 bg-white p-6 shadow-2xl shadow-slate-950/30" @submit.prevent="submitLowongan">
+            <div class="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <p class="text-sm font-bold uppercase tracking-wide text-indigo-600">{{ editId ? 'Mode update' : 'Mode create' }}</p>
+                <h2 class="mt-1 text-2xl font-black text-slate-950">{{ modalTitle }}</h2>
+                <p class="mt-1 text-sm text-slate-500">{{ modalDescription }}</p>
+              </div>
+
+              <button type="button" class="muted-button px-3 py-1.5" @click="closeFormModal">
+                ✕
+              </button>
+            </div>
+
+            <div class="grid gap-4 sm:grid-cols-2">
+              <div class="sm:col-span-2">
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Judul Lowongan</label>
+                <input v-model="form.judul" class="w-full" type="text" required maxlength="100" placeholder="Contoh: Frontend Developer">
+              </div>
+
+              <div class="sm:col-span-2">
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Unit</label>
+                <input v-model="form.unit" class="w-full" type="text" placeholder="Contoh: Direktorat SDM">
+              </div>
+
+              <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Tanggal Buka</label>
+                <input v-model="form.tanggalBuka" class="w-full" type="date" :max="form.tanggalTutup || null" @change="validateDateRange">
+              </div>
+
+              <div>
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Tanggal Tutup</label>
+                <input v-model="form.tanggalTutup" class="w-full" type="date" :min="form.tanggalBuka || null" @change="validateDateRange">
+              </div>
+
+              <div v-if="editId" class="sm:col-span-2">
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Status</label>
+                <select v-model="form.status" class="w-full">
+                  <option value="aktif">Aktif</option>
+                  <option value="nonaktif">Nonaktif</option>
+                </select>
+              </div>
+
+              <div class="sm:col-span-2">
+                <label class="mb-2 block text-sm font-semibold text-slate-700">Deskripsi</label>
+                <textarea
+                  v-model="form.deskripsi"
+                  rows="4"
+                  placeholder="Tulis ringkasan pekerjaan, tanggung jawab, atau kualifikasi utama"
+                ></textarea>
+              </div>
+            </div>
+
+            <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button type="button" class="muted-button" @click="closeFormModal">
+                Batal
+              </button>
+
+              <button type="submit" :class="editId ? 'primary-button' : 'success-button'">
+                {{ editId ? 'Simpan Perubahan' : 'Simpan Lowongan' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </Transition>
+    </Teleport>
   </main>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+</style>
