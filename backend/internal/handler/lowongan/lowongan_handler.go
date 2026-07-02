@@ -1,5 +1,4 @@
-// backend/internal/handler/lowongan_handler.go
-package handler
+package lowongan
 
 import (
 	"encoding/json"
@@ -7,47 +6,31 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
-	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/usecase"
+	domain "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain/lowongan"
+	handlerresponse "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/handler"
+	lowonganusecase "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/usecase/lowongan"
 )
 
 type LowonganHandler struct {
-	usecase *usecase.LowonganUsecase
+	usecase *lowonganusecase.LowonganUsecase
 }
 
-func NewLowonganHandler(usecase *usecase.LowonganUsecase) *LowonganHandler {
+func NewLowonganHandler(usecase *lowonganusecase.LowonganUsecase) *LowonganHandler {
 	return &LowonganHandler{
 		usecase: usecase,
 	}
 }
 
-type apiResponse struct {
-	Success bool   `json:"success"`
-	Message string `json:"message,omitempty"`
-	Data    any    `json:"data,omitempty"`
-}
-
-func writeJSON(w http.ResponseWriter, statusCode int, success bool, message string, data any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-
-	_ = json.NewEncoder(w).Encode(apiResponse{
-		Success: success,
-		Message: message,
-		Data:    data,
-	})
-}
-
 func success(w http.ResponseWriter, message string, data any) {
-	writeJSON(w, http.StatusOK, true, message, data)
+	handlerresponse.Success(w, message, data)
 }
 
 func created(w http.ResponseWriter, message string, data any) {
-	writeJSON(w, http.StatusCreated, true, message, data)
+	handlerresponse.Created(w, message, data)
 }
 
 func errorResponse(w http.ResponseWriter, statusCode int, message string) {
-	writeJSON(w, statusCode, false, message, nil)
+	handlerresponse.Error(w, statusCode, message)
 }
 
 func getIDFromQuery(r *http.Request) (int, error) {
@@ -81,6 +64,7 @@ func (h *LowonganHandler) GetLowongan(w http.ResponseWriter, r *http.Request) {
 	filter := domain.LowonganFilterRequest{
 		Keyword: r.URL.Query().Get("keyword"),
 		Status:  r.URL.Query().Get("status"),
+		Sort:    r.URL.Query().Get("sort"),
 		Page:    page,
 		Limit:   limit,
 	}

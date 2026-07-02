@@ -1,20 +1,20 @@
-package usecase
+package lowongan
 
 import (
 	"errors"
 	"strings"
 	"time"
 
-	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
+	lowongandomain "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain/lowongan"
 )
 
 type LowonganRepository interface {
-	GetAllLowongan(filter domain.LowonganFilterRequest) (domain.LowonganListResponse, error)
-	GetLowonganByID(id int) (domain.Lowongan, error)
-	CreateLowongan(lowongan domain.Lowongan) (domain.Lowongan, error)
+	GetAllLowongan(filter lowongandomain.LowonganFilterRequest) (lowongandomain.LowonganListResponse, error)
+	GetLowonganByID(id int) (lowongandomain.Lowongan, error)
+	CreateLowongan(lowongan lowongandomain.Lowongan) (lowongandomain.Lowongan, error)
 	DeleteLowongan(id int) error
-	UpdateLowonganStatus(id int, status string) (domain.Lowongan, error)
-	UpdateLowongan(id int, lowongan domain.Lowongan) (domain.Lowongan, error)
+	UpdateLowonganStatus(id int, status string) (lowongandomain.Lowongan, error)
+	UpdateLowongan(id int, lowongan lowongandomain.Lowongan) (lowongandomain.Lowongan, error)
 	BulkUpdateLowonganStatus(ids []int, status string) error
 	BulkDeleteLowongan(ids []int) error
 }
@@ -51,42 +51,46 @@ func validateLowonganDates(tanggalBuka *time.Time, tanggalTutup *time.Time) erro
 	return nil
 }
 
-func (u *LowonganUsecase) GetLowonganList(filter domain.LowonganFilterRequest) (domain.LowonganListResponse, error) {
+func (u *LowonganUsecase) GetLowonganList(filter lowongandomain.LowonganFilterRequest) (lowongandomain.LowonganListResponse, error) {
 	if filter.Status != "" && filter.Status != "aktif" && filter.Status != "nonaktif" {
-		return domain.LowonganListResponse{}, errors.New("status filter harus aktif atau nonaktif")
+		return lowongandomain.LowonganListResponse{}, errors.New("status filter harus aktif atau nonaktif")
+	}
+
+	if filter.Sort != "" && filter.Sort != "newest" && filter.Sort != "oldest" {
+		return lowongandomain.LowonganListResponse{}, errors.New("sort harus newest atau oldest")
 	}
 
 	return u.repo.GetAllLowongan(filter)
 }
 
-func (u *LowonganUsecase) GetLowonganDetail(id int) (domain.Lowongan, error) {
+func (u *LowonganUsecase) GetLowonganDetail(id int) (lowongandomain.Lowongan, error) {
 	if id <= 0 {
-		return domain.Lowongan{}, errors.New("ID lowongan tidak valid")
+		return lowongandomain.Lowongan{}, errors.New("ID lowongan tidak valid")
 	}
 
 	return u.repo.GetLowonganByID(id)
 }
 
-func (u *LowonganUsecase) CreateLowongan(request domain.CreateLowonganRequest) (domain.Lowongan, error) {
+func (u *LowonganUsecase) CreateLowongan(request lowongandomain.CreateLowonganRequest) (lowongandomain.Lowongan, error) {
 	if request.Judul == "" || request.Unit == "" {
-		return domain.Lowongan{}, errors.New("judul dan unit wajib diisi")
+		return lowongandomain.Lowongan{}, errors.New("judul dan unit wajib diisi")
 	}
 
 	tanggalBuka, err := parseOptionalDate(request.TanggalBuka, "tanggal buka")
 	if err != nil {
-		return domain.Lowongan{}, err
+		return lowongandomain.Lowongan{}, err
 	}
 
 	tanggalTutup, err := parseOptionalDate(request.TanggalTutup, "tanggal tutup")
 	if err != nil {
-		return domain.Lowongan{}, err
+		return lowongandomain.Lowongan{}, err
 	}
 
 	if err := validateLowonganDates(tanggalBuka, tanggalTutup); err != nil {
-		return domain.Lowongan{}, err
+		return lowongandomain.Lowongan{}, err
 	}
 
-	lowongan := domain.Lowongan{
+	lowongan := lowongandomain.Lowongan{
 		Judul:        strings.TrimSpace(request.Judul),
 		Unit:         strings.TrimSpace(request.Unit),
 		TanggalBuka:  tanggalBuka,
@@ -102,38 +106,38 @@ func (u *LowonganUsecase) DeleteLowongan(id int) error {
 	return u.repo.DeleteLowongan(id)
 }
 
-func (u *LowonganUsecase) UpdateLowonganStatus(id int, request domain.UpdateLowonganStatusRequest) (domain.Lowongan, error) {
+func (u *LowonganUsecase) UpdateLowonganStatus(id int, request lowongandomain.UpdateLowonganStatusRequest) (lowongandomain.Lowongan, error) {
 	if request.Status != "aktif" && request.Status != "nonaktif" {
-		return domain.Lowongan{}, errors.New("status harus aktif atau nonaktif")
+		return lowongandomain.Lowongan{}, errors.New("status harus aktif atau nonaktif")
 	}
 
 	return u.repo.UpdateLowonganStatus(id, request.Status)
 }
 
-func (u *LowonganUsecase) UpdateLowongan(id int, request domain.UpdateLowonganRequest) (domain.Lowongan, error) {
+func (u *LowonganUsecase) UpdateLowongan(id int, request lowongandomain.UpdateLowonganRequest) (lowongandomain.Lowongan, error) {
 	if request.Judul == "" || request.Unit == "" {
-		return domain.Lowongan{}, errors.New("judul dan unit wajib diisi")
+		return lowongandomain.Lowongan{}, errors.New("judul dan unit wajib diisi")
 	}
 
 	if request.Status != "aktif" && request.Status != "nonaktif" {
-		return domain.Lowongan{}, errors.New("status harus aktif atau nonaktif")
+		return lowongandomain.Lowongan{}, errors.New("status harus aktif atau nonaktif")
 	}
 
 	tanggalBuka, err := parseOptionalDate(request.TanggalBuka, "tanggal buka")
 	if err != nil {
-		return domain.Lowongan{}, err
+		return lowongandomain.Lowongan{}, err
 	}
 
 	tanggalTutup, err := parseOptionalDate(request.TanggalTutup, "tanggal tutup")
 	if err != nil {
-		return domain.Lowongan{}, err
+		return lowongandomain.Lowongan{}, err
 	}
 
 	if err := validateLowonganDates(tanggalBuka, tanggalTutup); err != nil {
-		return domain.Lowongan{}, err
+		return lowongandomain.Lowongan{}, err
 	}
 
-	lowongan := domain.Lowongan{
+	lowongan := lowongandomain.Lowongan{
 		Judul:        strings.TrimSpace(request.Judul),
 		Unit:         strings.TrimSpace(request.Unit),
 		TanggalBuka:  tanggalBuka,
@@ -145,7 +149,7 @@ func (u *LowonganUsecase) UpdateLowongan(id int, request domain.UpdateLowonganRe
 	return u.repo.UpdateLowongan(id, lowongan)
 }
 
-func (u *LowonganUsecase) BulkUpdateLowonganStatus(request domain.BulkUpdateStatusRequest) error {
+func (u *LowonganUsecase) BulkUpdateLowonganStatus(request lowongandomain.BulkUpdateStatusRequest) error {
 	if len(request.IDs) == 0 {
 		return errors.New("minimal pilih satu lowongan")
 	}
@@ -157,7 +161,7 @@ func (u *LowonganUsecase) BulkUpdateLowonganStatus(request domain.BulkUpdateStat
 	return u.repo.BulkUpdateLowonganStatus(request.IDs, request.Status)
 }
 
-func (u *LowonganUsecase) BulkDeleteLowongan(request domain.BulkDeleteRequest) error {
+func (u *LowonganUsecase) BulkDeleteLowongan(request lowongandomain.BulkDeleteRequest) error {
 	if len(request.IDs) == 0 {
 		return errors.New("minimal pilih satu lowongan")
 	}

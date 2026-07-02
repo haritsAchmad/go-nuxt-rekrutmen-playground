@@ -6,11 +6,14 @@ import (
 
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/database"
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/config"
-	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/handler"
+	authhandler "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/handler/auth"
+	lowonganhandler "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/handler/lowongan"
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/middleware"
-	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/repository/postgres"
+	authrepository "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/repository/auth"
+	lowonganrepository "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/repository/lowongan"
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/route"
-	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/usecase"
+	authusecase "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/usecase/auth"
+	lowonganusecase "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/usecase/lowongan"
 )
 
 func main() {
@@ -24,13 +27,13 @@ func main() {
 
 	log.Println("✅ PostgreSQL Connected")
 
-	lowonganRepo := postgres.NewLowonganRepository(db)
-	lowonganUsecase := usecase.NewLowonganUsecase(lowonganRepo)
-	lowonganHandler := handler.NewLowonganHandler(lowonganUsecase)
+	lowonganRepo := lowonganrepository.NewLowonganRepository(db)
+	lowonganUsecase := lowonganusecase.NewLowonganUsecase(lowonganRepo)
+	lowonganHandler := lowonganhandler.NewLowonganHandler(lowonganUsecase)
 
-	authRepo := postgres.NewAuthRepository(db)
-	authUsecase := usecase.NewAuthUsecase(authRepo, cfg.Auth.SecretKey)
-	authHandler := handler.NewAuthHandler(authUsecase)
+	authRepo := authrepository.NewAuthRepository(db)
+	authUsecase := authusecase.NewAuthUsecase(authRepo, cfg.Auth.SecretKey)
+	authHandler := authhandler.NewAuthHandler(authUsecase)
 
 	route.RegisterRoutes(lowonganHandler, authHandler, cfg.Auth.SecretKey)
 

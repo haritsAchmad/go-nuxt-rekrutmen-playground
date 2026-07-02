@@ -1,11 +1,11 @@
-package postgres
+package auth
 
 import (
 	"context"
 	"errors"
 	"strings"
 
-	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
+	authdomain "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain/auth"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -20,10 +20,10 @@ func NewAuthRepository(db *pgxpool.Pool) *AuthRepository {
 	}
 }
 
-func (r *AuthRepository) GetUserByEmail(email string) (domain.User, error) {
+func (r *AuthRepository) GetUserByEmail(email string) (authdomain.User, error) {
 	ctx := context.Background()
 
-	var user domain.User
+	var user authdomain.User
 
 	err := r.db.QueryRow(ctx, `
 		SELECT id, name, email, role, password_hash, password_salt, status
@@ -39,10 +39,10 @@ func (r *AuthRepository) GetUserByEmail(email string) (domain.User, error) {
 		&user.Status,
 	)
 	if errors.Is(err, pgx.ErrNoRows) {
-		return domain.User{}, errors.New("user tidak ditemukan")
+		return authdomain.User{}, errors.New("user tidak ditemukan")
 	}
 	if err != nil {
-		return domain.User{}, err
+		return authdomain.User{}, err
 	}
 
 	return user, nil

@@ -1,4 +1,4 @@
-package usecase
+package auth
 
 import (
 	"crypto/hmac"
@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
+	authdomain "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain/auth"
 )
 
 type AuthRepository interface {
-	GetUserByEmail(email string) (domain.User, error)
+	GetUserByEmail(email string) (authdomain.User, error)
 }
 
 type AuthUsecase struct {
@@ -30,28 +30,28 @@ func NewAuthUsecase(repo AuthRepository, secretKey string) *AuthUsecase {
 	}
 }
 
-func (u *AuthUsecase) Login(request domain.LoginRequest) (domain.LoginResponse, error) {
+func (u *AuthUsecase) Login(request authdomain.LoginRequest) (authdomain.LoginResponse, error) {
 	email := strings.TrimSpace(strings.ToLower(request.Email))
 	password := strings.TrimSpace(request.Password)
 
 	if email == "" || password == "" {
-		return domain.LoginResponse{}, errors.New("email dan password wajib diisi")
+		return authdomain.LoginResponse{}, errors.New("email dan password wajib diisi")
 	}
 
 	user, err := u.repo.GetUserByEmail(email)
 	if err != nil {
-		return domain.LoginResponse{}, errors.New("email atau password salah")
+		return authdomain.LoginResponse{}, errors.New("email atau password salah")
 	}
 
 	if user.Status != "aktif" {
-		return domain.LoginResponse{}, errors.New("user tidak aktif")
+		return authdomain.LoginResponse{}, errors.New("user tidak aktif")
 	}
 
 	if hashPassword(user.PasswordSalt, password) != user.PasswordHash {
-		return domain.LoginResponse{}, errors.New("email atau password salah")
+		return authdomain.LoginResponse{}, errors.New("email atau password salah")
 	}
 
-	authUser := domain.AuthUserResponse{
+	authUser := authdomain.AuthUserResponse{
 		ID:    user.ID,
 		Name:  user.Name,
 		Email: user.Email,
@@ -60,10 +60,10 @@ func (u *AuthUsecase) Login(request domain.LoginRequest) (domain.LoginResponse, 
 
 	token, err := u.generateToken(authUser)
 	if err != nil {
-		return domain.LoginResponse{}, err
+		return authdomain.LoginResponse{}, err
 	}
 
-	return domain.LoginResponse{
+	return authdomain.LoginResponse{
 		Token: token,
 		User:  authUser,
 	}, nil
@@ -74,7 +74,7 @@ func hashPassword(salt string, password string) string {
 	return hex.EncodeToString(hash[:])
 }
 
-func (u *AuthUsecase) generateToken(user domain.AuthUserResponse) (string, error) {
+func (u *AuthUsecase) generateToken(user authdomain.AuthUserResponse) (string, error) {
 	header := map[string]string{
 		"alg": "HS256",
 		"typ": "JWT",

@@ -1,4 +1,4 @@
-package domain
+package lowongan
 
 import "time"
 
@@ -36,6 +36,7 @@ type UpdateLowonganRequest struct {
 type LowonganFilterRequest struct {
 	Keyword string
 	Status  string
+	Sort    string
 	Page    int
 	Limit   int
 }

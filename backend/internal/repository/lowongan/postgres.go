@@ -1,4 +1,4 @@
-package postgres
+package lowongan
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
+	domain "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain/lowongan"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -48,6 +48,11 @@ func (r *LowonganRepository) GetAllLowongan(filter domain.LowonganFilterRequest)
 	offset := (page - 1) * limit
 	keyword := strings.TrimSpace(filter.Keyword)
 	status := strings.TrimSpace(filter.Status)
+	orderQuery := " ORDER BY id DESC"
+
+	if filter.Sort == "oldest" {
+		orderQuery = " ORDER BY id ASC"
+	}
 
 	whereQuery := `
 		WHERE ($1 = '' OR LOWER(judul) LIKE '%' || LOWER($1) || '%' OR LOWER(unit) LIKE '%' || LOWER($1) || '%')
@@ -57,8 +62,7 @@ func (r *LowonganRepository) GetAllLowongan(filter domain.LowonganFilterRequest)
 	rows, err := r.db.Query(ctx, `
 		SELECT id, judul, unit, tanggal_buka, tanggal_tutup, COALESCE(deskripsi, ''), status
 		FROM lowongan
-	`+whereQuery+`
-		ORDER BY id
+	`+whereQuery+orderQuery+`
 		LIMIT $3 OFFSET $4
 	`, keyword, status, limit, offset)
 	if err != nil {

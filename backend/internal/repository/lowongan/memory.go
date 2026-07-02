@@ -1,12 +1,13 @@
-package repository
+package lowongan
 
 import (
 	"errors"
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 
-	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain"
+	domain "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/domain/lowongan"
 )
 
 type LowonganMemoryRepository struct{}
@@ -89,6 +90,14 @@ func GetAllLowongan(filter domain.LowonganFilterRequest) domain.LowonganListResp
 			filtered = append(filtered, lowongan)
 		}
 	}
+
+	sort.SliceStable(filtered, func(i, j int) bool {
+		if filter.Sort == "oldest" {
+			return filtered[i].ID < filtered[j].ID
+		}
+
+		return filtered[i].ID > filtered[j].ID
+	})
 
 	page := filter.Page
 	limit := filter.Limit

@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/handler"
+	authhandler "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/handler/auth"
+	lowonganhandler "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/handler/lowongan"
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/middleware"
 )
 
-func RegisterRoutes(lowonganHandler *handler.LowonganHandler, authHandler *handler.AuthHandler, authSecretKey string) {
+func RegisterRoutes(lowonganHandler *lowonganhandler.LowonganHandler, authHandler *authhandler.AuthHandler, authSecretKey string) {
 	authMiddleware := middleware.Auth(authSecretKey)
 	canReadLowongan := middleware.RequireRoles("superadmin", "admin", "viewer")
 	canManageLowongan := middleware.RequireRoles("superadmin", "admin")

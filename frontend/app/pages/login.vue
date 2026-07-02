@@ -1,4 +1,8 @@
 <script setup>
+definePageMeta({
+  layout: false
+})
+
 const authStore = useAuthStore()
 
 const loginForm = reactive({
