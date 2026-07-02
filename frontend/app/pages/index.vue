@@ -501,23 +501,33 @@ function toggleSelectAll() {
         {{ actionError }}
       </div>
 
-      <section class="dashboard-card">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <p class="text-sm font-bold uppercase tracking-wide text-indigo-600">Filter</p>
-            <h2 class="mt-1 text-2xl font-black text-slate-950">Cari Lowongan</h2>
-          </div>
+      <section class="dashboard-card space-y-5">
+        <div>
+          <p class="text-sm font-bold uppercase tracking-wide text-indigo-600">Data lowongan</p>
+          <h2 class="mt-1 text-2xl font-black text-slate-950">Daftar Lowongan</h2>
+          <p class="mt-1 text-sm text-slate-500">
+            Menampilkan {{ showingFrom }} - {{ showingTo }} dari {{ paginationMeta.total }} data
+          </p>
+        </div>
 
-          <div class="grid w-full gap-3 sm:grid-cols-[1fr_180px_auto_auto] lg:w-auto">
-            <input v-model="filter.keyword" class="w-full" type="text" placeholder="Cari judul/unit">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div class="grid gap-3 sm:grid-cols-[104px_156px_minmax(220px,1fr)_auto_auto] lg:flex-1">
+            <select v-model="limit" :disabled="pending" class="w-full" @change="changeLimit">
+              <option :value="5">5</option>
+              <option :value="10">10</option>
+              <option :value="25">25</option>
+              <option :value="50">50</option>
+            </select>
 
-            <select v-model="filter.status" class="w-full">
+            <select v-model="filter.status" class="w-full" @change="applyFilter">
               <option value="">Semua Status</option>
               <option value="aktif">Aktif</option>
               <option value="nonaktif">Nonaktif</option>
             </select>
 
-            <button type="button" class="primary-button" @click="applyFilter">
+            <input v-model="filter.keyword" class="w-full" type="text" placeholder="Cari judul atau unit" @keyup.enter="applyFilter">
+
+            <button type="button" class="muted-button" @click="applyFilter">
               Cari
             </button>
 
@@ -525,31 +535,10 @@ function toggleSelectAll() {
               Reset
             </button>
           </div>
-        </div>
-      </section>
 
-      <section class="dashboard-card space-y-5">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <p class="text-sm font-bold uppercase tracking-wide text-indigo-600">Data lowongan</p>
-            <h2 class="mt-1 text-2xl font-black text-slate-950">Daftar Lowongan</h2>
-            <p class="mt-1 text-sm text-slate-500">
-              Menampilkan {{ showingFrom }} - {{ showingTo }} dari {{ paginationMeta.total }} data
-            </p>
-          </div>
-
-          <div class="flex flex-wrap items-center gap-2">
-            <select v-model="limit" :disabled="pending" class="w-32" @change="changeLimit">
-              <option :value="5">5 / page</option>
-              <option :value="10">10 / page</option>
-              <option :value="25">25 / page</option>
-              <option :value="50">50 / page</option>
-            </select>
-
-            <button type="button" class="primary-button" @click="openCreateModal">
-              + Tambah Lowongan
-            </button>
-          </div>
+          <button type="button" class="primary-button whitespace-nowrap" @click="openCreateModal">
+            + Tambah Lowongan
+          </button>
         </div>
 
         <Transition name="fade">
