@@ -23,13 +23,15 @@ const userInitials = computed(() => {
 
 const navigation = [
   { label: 'Dashboard', to: '/' },
-  { label: 'Lowongan', to: '/lowongan' }
+  { label: 'Lowongan', to: '/lowongan' },
+  { label: 'Pelamar', to: '/pelamar' }
 ]
 
 const pageTitle = computed(() => {
   const titles = {
     '/': 'Dashboard',
     '/lowongan': 'Kelola Lowongan',
+    '/pelamar': 'Kelola Pelamar',
     '/profil': 'Profil Saya'
   }
 
