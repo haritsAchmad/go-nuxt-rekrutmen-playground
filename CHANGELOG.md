@@ -1,7 +1,7 @@
 # Changelog
 
 This changelog is based on the Git history from 2026-06-18 through
-2026-07-02. No project changes were recorded from 2026-06-18 through
+2026-07-03. No project changes were recorded from 2026-06-18 through
 2026-06-22; development recorded in this repository started on 2026-06-23.
 
 ## 2026-06-23
@@ -165,3 +165,19 @@ This changelog is based on the Git history from 2026-06-18 through
   descriptions with hover tooltips.
 - Preserve horizontal table scrolling and responsive navigation behavior on
   smaller screens.
+
+## 2026-07-03
+
+### Backend
+
+- Add Pelamar domain models, PostgreSQL repository, use case, handler, and
+  protected API routes.
+- Add Pelamar list, detail, create, update, delete, status update, bulk status,
+  and bulk delete operations.
+- Wire Pelamar dependencies into the backend application startup.
+
+### Frontend
+
+- Add a protected `/pelamar` page with filtering, sorting, pagination, detail,
+  create, edit, delete, and bulk actions.
+- Add Pelamar navigation and page title support to the authenticated app layout.
