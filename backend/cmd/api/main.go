@@ -8,12 +8,15 @@ import (
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/config"
 	authhandler "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/handler/auth"
 	lowonganhandler "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/handler/lowongan"
+	pelamarhandler "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/handler/pelamar"
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/middleware"
 	authrepository "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/repository/auth"
 	lowonganrepository "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/repository/lowongan"
+	pelamarrepository "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/repository/pelamar"
 	"github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/route"
 	authusecase "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/usecase/auth"
 	lowonganusecase "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/usecase/lowongan"
+	pelamarusecase "github.com/haritsAchmad/go-nuxt-rekrutmen-playground/backend/internal/usecase/pelamar"
 )
 
 func main() {
@@ -31,11 +34,15 @@ func main() {
 	lowonganUsecase := lowonganusecase.NewLowonganUsecase(lowonganRepo)
 	lowonganHandler := lowonganhandler.NewLowonganHandler(lowonganUsecase)
 
+	pelamarRepo := pelamarrepository.NewPelamarRepository(db)
+	pelamarUsecase := pelamarusecase.NewPelamarUsecase(pelamarRepo)
+	pelamarHandler := pelamarhandler.NewPelamarHandler(pelamarUsecase)
+
 	authRepo := authrepository.NewAuthRepository(db)
 	authUsecase := authusecase.NewAuthUsecase(authRepo, cfg.Auth.SecretKey)
 	authHandler := authhandler.NewAuthHandler(authUsecase)
 
-	route.RegisterRoutes(lowonganHandler, authHandler, cfg.Auth.SecretKey)
+	route.RegisterRoutes(lowonganHandler, pelamarHandler, authHandler, cfg.Auth.SecretKey)
 
 	serverHandler := middleware.Recovery(
 		middleware.Logger(
